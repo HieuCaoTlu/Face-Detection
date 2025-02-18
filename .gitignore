@@ -1,0 +1,33 @@
+backend/api/face_recognition.onnx
+*.onnx
+
+# === Backend ===
+myenv/
+__pycache__/
+checkin/
+*.pyc
+*.pyo
+*.log
+
+# === Frontend (React, Node.js) ===
+node_modules/
+*.env
+*.cache/
+dist/
+.build/
+
+# === Docker ===
+.dockerignore
+docker-compose.override.yml
+
+# === Python virtualenv ===
+venv/
+.env
+
+# === IDE/Editor ===
+.vscode/
+.idea/
+
+# === System files ===
+.DS_Store
+Thumbs.db

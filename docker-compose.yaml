@@ -7,9 +7,10 @@ services:
       - ./backend:/app
     ports:
       - "8000:8000"
-    command: python manage.py runserver 0.0.0.0:8000 --noreload
     environment:
-      - DEBUG=1
+      - PYTHONUNBUFFERED=1
+    restart: on-failure
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
   frontend:
     build:
