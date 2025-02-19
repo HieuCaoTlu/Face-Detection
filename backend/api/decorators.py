@@ -1,6 +1,14 @@
 from functools import wraps
 from django.http import HttpResponseForbidden
 
+def login_required(function):
+    @wraps(function)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return HttpResponseForbidden("Bạn cần đăng nhập để sử dụng.")
+        return function(request, *args, **kwargs)
+    return _wrapped_view
+
 def teacher_required(function):
     @wraps(function)
     def _wrapped_view(request, *args, **kwargs):

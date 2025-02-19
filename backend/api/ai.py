@@ -4,6 +4,7 @@ import onnxruntime as ort
 import joblib
 import os
 import requests
+from api.models import EmbeddingData
 
 model_dir = os.path.join(os.path.dirname(__file__), 'ai_model')
 face_classifier = joblib.load(os.path.join(model_dir, 'face_classifier.pkl'))
@@ -62,3 +63,28 @@ def predict(image):
     prediction = face_classifier.predict(outputs[0])
     print("Dự đoán:", prediction[0])
     return prediction[0]
+
+def train(images_path, label):
+    global face_classifier
+    for image_path in images_path:
+        image = Image.open(image_path)
+        image = image.convert('RGB')
+        face_input = preprocess_image(image)  
+        output = session.run(None, {session.get_inputs()[0].name: face_input})
+        embedding = output[0][0].tolist()
+        instance = EmbeddingData(embedding=embedding, label=label)
+        instance.save()
+        print("Lưu embedding thành công")
+
+    data = EmbeddingData.objects.all()
+    embeddings = []
+    labels = []
+    for item in data:
+        embeddings.append(item.embedding) 
+        labels.append(item.label)
+
+    face_classifier.fit(embeddings, labels)
+    print(face_classifier.classes_)
+    print("Huấn luyện lại thành công")
+    return True
+

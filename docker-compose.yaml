@@ -7,8 +7,11 @@ services:
       - ./backend:/app
     ports:
       - "8000:8000"
+    depends_on:
+      - postgres
     environment:
       - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgres://myuser:mypassword@postgres:5432/mydatabase
     restart: on-failure
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
@@ -23,6 +26,20 @@ services:
     depends_on:
       - backend
     command: npm run dev
+  postgres:
+    image: postgres:15  # Chạy PostgreSQL phiên bản 15
+    container_name: postgres_service
+    restart: always
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backup.sql:/docker-entrypoint-initdb.d/backup.sql
 
 volumes:
   node_modules:
+  postgres_data:

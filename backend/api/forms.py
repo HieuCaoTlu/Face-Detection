@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import CustomUser, Student
+from .models import CustomUser, Student, Teacher
 from django.contrib import admin
 
 class CustomUserCreationForm(UserCreationForm):
@@ -21,5 +21,15 @@ class StudentForm(UserCreationForm):
     
 class StudentAdmin(admin.ModelAdmin):
     form = StudentForm
-    list_display = ('username', 'is_staff', 'is_active')
+    list_display = ('username', 'is_staff', 'is_active','id')
     list_filter = ('is_staff', 'is_active')
+
+class TeacherForm(UserCreationForm):
+    class Meta:
+        model = Teacher
+        fields = ('username', 'password2','name')
+    
+class TeacherAdmin(admin.ModelAdmin):
+    form = TeacherForm
+    list_display = ('username', 'is_staff', 'is_active','name')
+    list_filter = ('is_staff', 'is_active','name')

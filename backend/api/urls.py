@@ -1,10 +1,13 @@
 from django.urls import path
-from . import views
+from .views import *
 
 urlpatterns = [
-    path('upload/', views.upload_image, name='upload_image'),
-    path('login/', views.login, name='login'),
-    path('face_auth/', views.face_auth, name='face_auth'),
-    path('register/', views.register, name='register'),
-    path('logout/', views.logout, name='logout'),
+    path('upload/', upload_images, name='upload_image'),
+    path('login/', login, name='login'),
+    path('face_auth/', face_auth, name='face_auth'),
+    path('register/', register, name='register'),
+    path('logout/', LogoutView.as_view(), name='logout'),
+    path('classroom/', ClassroomView.as_view(), name='classroom_list'),
+    path('classroom/<int:classroom_id>/', ClassroomView.as_view(), name='classroom_detail'),
+    path('attendance/', AttendanceView.as_view(), name='attendance'),
 ]

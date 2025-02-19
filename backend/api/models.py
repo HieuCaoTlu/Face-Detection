@@ -6,6 +6,7 @@ from io import BytesIO
 from PIL import Image
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
+from django.contrib.postgres.fields import ArrayField
 
 class BaseModelManager(models.Manager):
     def get_queryset(self):
@@ -67,16 +68,74 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     def __str__(self):
-        return self.username
+        return self.name if self.name else self.username
+
+    def info(self):
+        return {
+            'name': self.name,
+            'username': self.username,
+            'gender': self.gender,
+            'phone_number': self.phone_number,
+            'dob': self.dob,
+            'id': self.id,
+            'face_auth': self.face_auth,
+        }
 
 class Student(CustomUser):
+    pass
+
+class Teacher(CustomUser):
+    pass
+
+class Classroom(BaseModel):
+    name = models.CharField(max_length=255)
+    teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='classrooms')
+    students = models.ManyToManyField(Student, related_name='classroóm', blank=True)
+    start_time = models.TimeField(blank=True, null=True)
+    end_time = models.TimeField(blank=True, null=True)
 
     def __str__(self):
-        return 'Student'
+        return self.name
+
+    def info(self):
+        students = self.students.all()
+        return {
+            'name': self.name,
+            'teacher': self.teacher.name,
+            'start_time': self.start_time,
+            'end_time': self.end_time,
+            'id': self.id,
+            'students': [student.info() for student in students]
+        }
+
+class Report(BaseModel):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='reports')
+    log_face = models.ForeignKey('FaceAuthLog', on_delete=models.CASCADE, related_name='reports')
+    problem = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.log_face.student.name} - {self.log_face.created_at}"
+
+    class Meta:
+        db_table = "reports"
+        ordering = ("-created_at",)
+
+class Score(BaseModel):
+    student = models.ForeignKey(Student, on_delete=models.SET_NULL, related_name="scores", blank=True, null=True)
+    classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, related_name="scores", blank=True, null=True)
+    score = models.FloatField(default=0)
+
+    def __str__(self):
+        return f"{self.student.name} - {self.classroom.name}"
+    
+    class Meta:
+        db_table = "scores"
+        ordering = ("-created_at",)
 
 class FaceAuthLog(BaseModel):
     image_data = models.BinaryField(blank=True, null=True)
     is_valid = models.BooleanField(default=False)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='facial_auth_logs', blank=True, null=True)
 
     def __str__(self):
         return f"{self.created_at}"
@@ -95,3 +154,10 @@ class FaceAuthLog(BaseModel):
             image = Image.open(BytesIO(self.image_data))
             return image
         return None
+
+class EmbeddingData(models.Model):
+    embedding = ArrayField(models.FloatField(), size=512, blank=True, null=True)
+    label = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.embedding[:2]} {self.label}"
