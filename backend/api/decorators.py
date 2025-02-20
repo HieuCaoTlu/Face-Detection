@@ -32,3 +32,11 @@ def admin_required(function):
             return HttpResponseForbidden("Bạn cần là quản trị viên để truy cập vào trang này.")
         return function(request, *args, **kwargs)
     return _wrapped_view
+
+# def wifi_required(function):
+#     @wraps(function)
+#     def _wrapped_view(request, *args, **kwargs):
+#         if not request.user.is_wifi:
+#             return HttpResponseForbidden("Bạn cần kết nối Wifi để sử dụng.")
+#         return function(request, *args, **kwargs)
+#     return _wrapped_view

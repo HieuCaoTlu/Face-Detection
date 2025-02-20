@@ -1,10 +1,10 @@
-## Cấu Trúc Dự Án
+# Cấu Trúc Dự Án
 
 - **Backend**: Django API chạy trên port 8000
 - **Frontend**: React (Vite) ứng dụng chạy trên port 5000
 - **Database**: PostgresSQL chạy trên port 5432
 
-## Các Lớp Cơ Sở Đã Thêm
+# Các Lớp Cơ Sở Đã Thêm
 - **Classroom**: Quản lý lớp học.
 - **Student**: Quản lý thông tin học viên.
 - **Teacher**: Quản lý thông tin giảng viên.
@@ -13,7 +13,7 @@
 - **Report**: Lưu trữ danh sách khiếu nại điểm danh
 - **Score**: Lưu trữ danh sách điểm theo lớp của sinh viên
 
-## Cách khởi động dự án
+# Cách khởi động dự án
 ```bash
 docker compose up --build # xây dựng docker và cài đặt package tự động
 localhost:8000 # url backend
@@ -26,24 +26,33 @@ localhost:5432 # url database
 - stu2 | trunghieu7a1
 - nam | trunghieu7a1
 
-## Các API đã xây dựng
-1. Về xác thực người dùng
-- Đăng nhập - POST - Body(raw) - nhận username và password ```localhost:8000/login/```
-- Đăng ký - POST - Body(raw) - nhận name, username và password ```localhost:8000/register/```
-- Đăng xuất - POST - ```localhost:8000/logout/```
+# Các API đã xây dựng
+Domain: ```localhost:8000/``` (yêu cầu đăng nhập trước khi dùng)
+1. Xác thực khuôn mặt 
+- face-auth/ POST: form-data với key là images, giá trị là tập ảnh
 
-2. Về chức năng quản lý
-- CRUD Classroom - GET/POST/PUT/DELETE: 
-    + GET (admin - trả về mọi lớp, teacher - trả về mọi lớp của GV): ```localhost:8000/classroom/```
-    + GET (trả về thông tin của 1 lớp): ```localhost:8000/classroom/<:id/```
-    + POST (tạo lớp - chỉ GV được xài) - Body(raw) - nhận name: ```localhost:8000/classroom/```
-    + PUT (sửa tên lớp - chỉ GV được xài) - Body(raw) - nhận name: ```localhost:8000/classroom/<:id/```
-    + DELETE (xóa lớp - chỉ GV được xài): ```localhost:8000/classroom/<:id/```
-- Thêm sinh viên vào lớp - POST - Body(raw) - nhận student_id và classroom_id: ```localhost:8000/attendance/```
+2. Đăng nhập, đăng ký, đổi mật khẩu
+- login/ POST: form-data với key là username, password
+- logout/ POST
+- change_password/ POST: form-data với key là old_password, new_password
 
-3. Về chức năng sử dụng AI
-- Xác thực khuôn mặt và trả về nhãn - POST - form-data {image: `ảnh`}: ```localhost:8000/face_auth/```
-- Huấn luyện lại mô hình với tập ảnh và nhãn mới - POST - form-data {images: `ảnh`, label:`tên nhãn`}: ```localhost:8000/upload/```
+3. Quản lý lớp học:
+- classroom/ GET: lấy nhiều lớp hoặc lớp của giáo viên
+- classroom/<int:classroom_id>/ GET: lấy thông tin lớp và sinh viên của 1 lớp qua id
+- classroom/ POST: tạo lớp học với form-data key gồm name, start_time, end_time
+- classroom/<int:classroom_id>/ PUT: chỉnh sửa lớp học với body raw giống POST
+- classroom/<int:classroom_id>/ DELETE: xóa lớp học với id tương ứng
+- attendance/ POST: thêm nhiều sinh viên vào 1 lớp (ngăn cách bằng dấu phẩy) với form-data gồm classroom_id, student_ids
+
+4. Quản lý sinh viên: student/ có CRUD giống ở trên
+
+5. Quản lý giáo viên: teacher/ có CRUD giống ở trên
+
+# Thêm một vài phương pháp lấy Default Gateway của Linux, Windows
+```bash
+    ./gateway.sh #Chạy để lấy được gateway.json
+    gateway.bat
+```
 
 # Optional (Backup dữ liệu từ CSDL):
 ```bash

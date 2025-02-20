@@ -74,6 +74,7 @@ def train(images_path, label):
         embedding = output[0][0].tolist()
         instance = EmbeddingData(embedding=embedding, label=label)
         instance.save()
+        os.remove(image_path)
         print("Lưu embedding thành công")
 
     data = EmbeddingData.objects.all()

@@ -5,6 +5,7 @@ backend/api/face_recognition.onnx
 myenv/
 __pycache__/
 checkin/
+train/
 *.pyc
 *.pyo
 *.log
