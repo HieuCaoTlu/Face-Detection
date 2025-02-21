@@ -1,14 +1,18 @@
-FROM node:20-slim
+# Sử dụng phiên bản nhẹ của Node.js
+FROM node:18-slim
 
-WORKDIR /app
+# Thiết lập thư mục làm việc
+WORKDIR /app 
 
-COPY package*.json /app/
+# Sao chép và cài đặt dependencies
+COPY package.json package-lock.json ./ 
+RUN npm ci 
 
-RUN npm install
+# Sao chép toàn bộ mã nguồn
+COPY . . 
 
-COPY . /app/
+# Expose port của Vite
+EXPOSE 5173 
 
-EXPOSE 5000
-
-CMD ["npm","run","dev"]
-
+# Chạy ứng dụng
+CMD ["npm", "run", "dev"]

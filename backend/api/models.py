@@ -123,14 +123,29 @@ class Report(BaseModel):
 class Score(BaseModel):
     student = models.ForeignKey(Student, on_delete=models.SET_NULL, related_name="scores", blank=True, null=True)
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, related_name="scores", blank=True, null=True)
-    score = models.FloatField(default=0)
+    score = models.FloatField(default=-1)
+
+    def check_info(self):
+        stu = self.student.name if self.student is not None else 'No Student'
+        clr = self.classroom.name if self.classroom is not None else 'No Classroom'
+        return (stu, clr)
 
     def __str__(self):
-        return f"{self.student.name} - {self.classroom.name}"
+        stu, clr = self.check_info()
+        return f"{stu} - {clr} - {self.score}"
     
     class Meta:
         db_table = "scores"
         ordering = ("-created_at",)
+
+    def info(self):
+        stu, clr = self.check_info()
+        return {
+            'student': stu,
+            'classroom': clr,
+            'score': self.score,
+            'id': self.id
+        }
 
 class FaceAuthLog(BaseModel):
     image_data = models.BinaryField(blank=True, null=True)

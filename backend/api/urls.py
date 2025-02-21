@@ -6,7 +6,7 @@ urlpatterns = [
     path('face_auth/', face_auth, name='face_auth'),
 
     # Account - Đăng nhập, đăng xuất, đổi mật khẩu
-    path('login/', login, name='login'),
+    path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('change_password/', ChangePasswordView.as_view(), name='change_password'),
 
@@ -22,4 +22,9 @@ urlpatterns = [
     # Student Routes - CRUD
     path('student/', StudentView.as_view(), name='student_list'),
     path('student/<int:student_id>/', StudentView.as_view(), name='student_detail'),
+
+    #Score Routes - CRU
+    path('score/', ScoreView.as_view(), name='score_list'),
+    path('score/<int:classroom_id>/', ScoreView.as_view(), name='score_detail'),
+    path('score/<int:classroom_id>/<int:student_id>', ScoreView.as_view(), name='score_change')
 ]
