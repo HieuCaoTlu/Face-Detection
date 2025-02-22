@@ -82,10 +82,16 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         }
 
 class Student(CustomUser):
-    pass
+    def info(self):
+        data = super().info()
+        data['role'] = 'student'
+        return data
 
 class Teacher(CustomUser):
-    pass
+    def info(self):
+        data = super().info()
+        data['role'] = 'teacher'
+        return data
 
 class Classroom(BaseModel):
     name = models.CharField(max_length=255)

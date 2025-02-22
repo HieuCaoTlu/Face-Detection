@@ -348,5 +348,12 @@ class ScoreView(BaseView):
             score.save()
             return JsonResponse({'status':'true', 'score':score.info()})
 
+@method_decorator(login_required, name='dispatch')
+class UserView(BaseView):
+    def get(self, request):
+        user = CustomUser.objects.get(id=request.user.id)
+        if not user:
+            return JsonResponse({'error':'Người dùng không tồn tại'},status=400)
+        return JsonResponse(user.info(), status=200)
 
         

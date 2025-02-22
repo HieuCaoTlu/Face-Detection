@@ -2,13 +2,14 @@ from django.urls import path
 from .views import *
 
 urlpatterns = [
-    # Xác thực khuôn mặt (ok). Kiểm tra địa chỉ Wifi (chưa làm)
+    # Xác thực khuôn mặt (ok)
     path('face_auth/', face_auth, name='face_auth'),
 
     # Account - Đăng nhập, đăng xuất, đổi mật khẩu
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('change_password/', ChangePasswordView.as_view(), name='change_password'),
+    path('info/', UserView.as_view(), name='user_detail'),
 
     # Classroom Routes - CRUD và thêm nhiều học viên vào lớp
     path('classroom/', ClassroomView.as_view(), name='classroom_list'),

@@ -61,6 +61,7 @@ def predict(image):
     face_input = preprocess_image(image)
     outputs = session.run(None, {session.get_inputs()[0].name: face_input})
     prediction = face_classifier.predict(outputs[0])
+    print(face_classifier.classes_)
     print("Dự đoán:", prediction[0])
     return prediction[0]
 
