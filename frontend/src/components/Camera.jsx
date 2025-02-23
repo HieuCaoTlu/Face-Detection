@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import * as faceapi from "face-api.js";
 import { Button, Typography, Box, CircularProgress } from "@mui/material";
 import { useSnackbar } from "../context/snackbar_context/useSnackbar";
+import { faceAuth } from "../api/checkin";
 
 export default function CameraComponent() {
-    const { showSnackbar } = useSnackbar(); // Lấy showSnackbar từ context
+    const { showSnackbar } = useSnackbar();
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [stream, setStream] = useState(null);
@@ -12,6 +13,7 @@ export default function CameraComponent() {
     const [capturedImages, setCapturedImages] = useState([]);
     const [bestImage, setBestImage] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [shouldShowSnackbar, setShouldShowSnackbar] = useState(false);
 
     useEffect(() => {
         const loadModels = async () => {
@@ -33,6 +35,13 @@ export default function CameraComponent() {
             }
         };
     }, [stream]);
+
+    useEffect(() => {
+        if (shouldShowSnackbar) {
+            showSnackbar("Điểm danh thành công!", "success");
+            setShouldShowSnackbar(false);
+        }
+    }, [shouldShowSnackbar, showSnackbar]);
 
     const startCamera = async () => {
         setCapturedImages([]);
@@ -58,10 +67,7 @@ export default function CameraComponent() {
         if (capturedImages.length >= 5) return;
 
         const video = videoRef.current;
-        if (!video) {
-            console.error("Không thể truy cập videoRef.current");
-            return;
-        }
+        if (!video) return;
 
         const canvas = document.createElement("canvas");
         canvas.width = video.videoWidth;
@@ -71,14 +77,11 @@ export default function CameraComponent() {
 
         const imageData = canvas.toDataURL("image/png");
 
-        console.log(`📸 Ảnh ${capturedImages.length + 1} chụp với xác suất: ${probability}`);
-        console.log(`🖼️ Image Data URL:`, imageData);
-
         setCapturedImages(prev => {
             const newImages = [...prev, { image: imageData, prob: probability }];
             if (newImages.length === 5) {
                 console.log("✅ Đã chụp đủ 5 ảnh, dừng camera.");
-                stopCamera();  // Dừng camera khi đủ 5 ảnh
+                stopCamera(newImages);
             }
             return newImages;
         });
@@ -112,14 +115,35 @@ export default function CameraComponent() {
         }, 200);
     };
 
-    const stopCamera = () => {
+    const stopCamera = (images) => {
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
         }
         setStream(null);
         setIsProcessing(true);
-        showSnackbar('Điểm danh thành công!', 'success');
-        setIsProcessing(false);
+
+        // Chọn ảnh có xác suất cao nhất
+        const best = images.reduce((prev, curr) => (curr.prob > prev.prob ? curr : prev), images[0]);
+        setBestImage(best.image);
+        console.log("✅ Ảnh tốt nhất được chọn:", best);
+
+        // Tạo file JPG
+        fetch(best.image)
+            .then(res => res.blob())
+            .then(blob => {
+                const file = new File([blob], "best_face.jpg", { type: "image/jpeg" });
+
+                // Tạo form-data
+                faceAuth(file)
+
+                // Simulate upload (thay bằng API thực tế)
+                const imageUrl = URL.createObjectURL(file);
+                console.log("🖼️ Link ảnh đã tạo:", imageUrl);
+
+                // Hiển thị thông báo thành công
+                setShouldShowSnackbar(true);
+                setIsProcessing(false);
+            });
     };
 
     return (

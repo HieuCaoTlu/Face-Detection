@@ -4,10 +4,18 @@ import onnxruntime as ort
 import joblib
 import os
 import requests
+from sklearn.svm import SVC
 from api.models import EmbeddingData
 
 model_dir = os.path.join(os.path.dirname(__file__), 'ai_model')
-face_classifier = joblib.load(os.path.join(model_dir, 'face_classifier.pkl'))
+model_path = os.path.join(model_dir, 'face_classifier.pkl')
+if os.path.exists(model_path):
+    face_classifier = joblib.load(model_path)
+    print("Model đã được load từ file.")
+else:
+    print("Không tìm thấy model. Tạo model mới...")
+    face_classifier = SVC()
+    joblib.dump(face_classifier, model_path)
 
 def download_file_from_google_drive(id, destination):
     URL = "https://docs.google.com/uc?export=download"
@@ -85,8 +93,16 @@ def train(images_path, label):
         embeddings.append(item.embedding) 
         labels.append(item.label)
 
+    if len(set(labels)) == 1:
+        print("Chỉ có một nhãn duy nhất, thêm embedding giả...")
+        dummy_embedding = np.random.rand(len(embeddings[0])).tolist()
+        embeddings.append(dummy_embedding)
+        labels.append("unknown")
+
+    face_classifier = SVC()
     face_classifier.fit(embeddings, labels)
-    print(face_classifier.classes_)
+    joblib.dump(face_classifier, os.path.join(model_dir, 'face_classifier.pkl'))
+    print("Các lớp trong mô hình mới:", face_classifier.classes_)
     print("Huấn luyện lại thành công")
     return True
 

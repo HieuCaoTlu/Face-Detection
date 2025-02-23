@@ -2,20 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import * as faceapi from "face-api.js";
 import { Button, Typography, Box, CircularProgress } from "@mui/material";
 import { useSnackbar } from "../context/snackbar_context/useSnackbar";
-import { useAuth } from "../context/auth_context/useAuth";
+import { applyFaceAuth } from "../api/checkin";
 
-export default function CameraComponent() {
+export default function TrainCamera() {
     const { showSnackbar } = useSnackbar();
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [stream, setStream] = useState(null);
     const [error, setError] = useState(null);
     const [capturedImages, setCapturedImages] = useState([]);
+    const [bestImage, setBestImage] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [timer, setTimer] = useState(5); // 10 giây quay video
-    const [message, setMessage] = useState("Quay video, xoay mặt mỗi 2s!");
-    const { user } = useAuth()
-
+    const [shouldShowSnackbar, setShouldShowSnackbar] = useState(false);
 
     useEffect(() => {
         const loadModels = async () => {
@@ -38,11 +36,17 @@ export default function CameraComponent() {
         };
     }, [stream]);
 
+    useEffect(() => {
+        if (shouldShowSnackbar) {
+            showSnackbar("Điểm danh thành công!", "success");
+            setShouldShowSnackbar(false);
+        }
+    }, [shouldShowSnackbar, showSnackbar]);
+
     const startCamera = async () => {
         setCapturedImages([]);
+        setBestImage(null);
         setIsProcessing(false);
-        setTimer(10);
-        setMessage("Quay video, xoay mặt mỗi 2s!");
 
         try {
             const userStream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -52,7 +56,6 @@ export default function CameraComponent() {
                 videoRef.current.onloadedmetadata = () => {
                     videoRef.current.play();
                     detectFaces();
-                    startTimer();
                 };
             }
         } catch (err) {
@@ -60,27 +63,11 @@ export default function CameraComponent() {
         }
     };
 
-    const startTimer = () => {
-        const interval = setInterval(() => {
-            setTimer(prev => {
-                if (prev <= 1) {
-                    clearInterval(interval);
-                    stopCamera();
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-    };
-
     const captureImage = async (probability) => {
         if (capturedImages.length >= 5) return;
 
         const video = videoRef.current;
-        if (!video) {
-            console.error("Không thể truy cập videoRef.current");
-            return;
-        }
+        if (!video) return;
 
         const canvas = document.createElement("canvas");
         canvas.width = video.videoWidth;
@@ -90,19 +77,15 @@ export default function CameraComponent() {
 
         const imageData = canvas.toDataURL("image/png");
 
-        console.log(`📸 Ảnh ${capturedImages.length + 1} chụp với xác suất: ${probability}`);
-        console.log(`🖼️ Image Data URL:`, imageData);
-
-        // Dùng hàm callback để đảm bảo cập nhật chính xác
         setCapturedImages(prev => {
             const newImages = [...prev, { image: imageData, prob: probability }];
+            if (newImages.length === 5) {
+                console.log("✅ Đã chụp đủ 5 ảnh, dừng camera.");
+                stopCamera(newImages);
+            }
             return newImages;
         });
     };
-
-    useEffect(() => {
-        console.log("Captured images have been updated:", capturedImages);
-    }, [capturedImages]);
 
     const detectFaces = async () => {
         if (!videoRef.current || !canvasRef.current) return;
@@ -113,50 +96,54 @@ export default function CameraComponent() {
         faceapi.matchDimensions(canvas, displaySize);
 
         const interval = setInterval(async () => {
-            // Nhận diện tất cả khuôn mặt
             const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }));
 
-            // Điều chỉnh kích thước của các kết quả nhận diện với kích thước của video
             const resizedDetections = faceapi.resizeResults(detections, displaySize);
             const ctx = canvas.getContext("2d");
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Xóa canvas mỗi lần trước khi vẽ lại
-
-            // Vẽ bounding box cho tất cả khuôn mặt đã phát hiện
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             faceapi.draw.drawDetections(canvas, resizedDetections);
 
             resizedDetections.forEach(detection => {
-                if (detection.score >= 0.8) {
-                    captureImage(detection.score); // Chụp ảnh nếu độ chính xác đủ cao
+                if (detection.score >= 0.7) {
+                    captureImage(detection.score);
                 }
             });
 
-            // Dừng nhận diện sau khi đã chụp đủ ảnh (hoặc khi hết thời gian quay video)
-            if (capturedImages.length >= 5 || timer <= 0) {
+            if (capturedImages.length >= 5) {
                 clearInterval(interval);
             }
-        }, 200); // Cập nhật bounding box và nhận diện mỗi 200ms
+        }, 200);
     };
 
-    const stopCamera = () => {
+    const stopCamera = (images) => {
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
         }
         setStream(null);
         setIsProcessing(true);
-        // Di chuyển showSnackbar vào useEffect
-        setTimeout(() => {
-            showSnackbar("Quá trình quay video kết thúc!", "success");
-        }, 0);
 
-        // Gửi dữ liệu ảnh
-        const formData = new FormData();
-        // images.forEach((file) => {
-        //     formData.append("images[]", file);  // Gửi tất cả ảnh vào một key "images[]"
-        // });
-        formData.append("label", user.name);
-        console.log("Form data đã chuẩn bị:", formData);
+        // Chọn ảnh có xác suất cao nhất
+        // Chuyển đổi tất cả ảnh thành file JPG và in ra URL blob của từng ảnh
+        const convertedImages = images.map(async (img) => {
+            const response = await fetch(img.image);
+            const blob = await response.blob();
+            const file = new File([blob], `${img.id || 'image'}.jpg`, { type: "image/jpeg" });
 
-        setIsProcessing(false);
+            // Tạo URL blob
+            const imageUrl = URL.createObjectURL(file);
+            console.log(`🖼️ Link ảnh đã tạo (${img.id || 'image'}):`, imageUrl);
+
+            return file;
+        });
+
+        Promise.all(convertedImages).then(async (files) => {
+            console.log("✅ Tất cả ảnh đã được chuyển đổi:", files);
+            await applyFaceAuth(files); 
+            setShouldShowSnackbar(true);
+            setIsProcessing(false);
+        });
+
+
     };
 
     return (
@@ -169,17 +156,16 @@ export default function CameraComponent() {
                         <video ref={videoRef} autoPlay playsInline style={{ width: "100%", height: "auto", borderRadius: 2 }} />
                         <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
                     </>
-                ) : (
-                    <Typography variant="h6" sx={{ color: "success.main" }}>Ảnh chụp đã xong!</Typography>
-                )}
+                ) : bestImage ? (
+                    <img src={bestImage} alt="Ảnh tốt nhất" style={{ width: "100%", maxWidth: 400, borderRadius: 2, border: "2px solid #007bff" }} />
+                ) : null}
             </Box>
-            <Typography>{message} {timer > 0 && `(${timer}s)`}</Typography>
             {!isProcessing && (
                 <Button variant="contained" color="primary" onClick={startCamera} sx={{ padding: "10px 15px" }}>
                     Mở Camera
                 </Button>
             )}
-            {isProcessing && <CircularProgress />}
+            {isProcessing && !bestImage && <CircularProgress />}
         </Box>
     );
 }

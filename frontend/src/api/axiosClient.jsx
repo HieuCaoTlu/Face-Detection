@@ -26,10 +26,10 @@ const request = (method, url, data = null) => {
 
     if (data) {
         if (method === "POST") {
-            const formData = new FormData();
-            Object.keys(data).forEach((key) => formData.append(key, data[key]));
-            options.data = formData;
-            options.headers["Content-Type"] = "multipart/form-data";
+            options.data = data;
+            if (data instanceof FormData) {
+                options.headers["Content-Type"] = "multipart/form-data";
+            }
         } else if (method === "PUT" || method === "PATCH") {
             options.data = JSON.stringify(data);
             options.headers["Content-Type"] = "application/json";

@@ -30,10 +30,39 @@ class BaseView(View):
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
 
-@method_decorator(login_required, name='dispatch')
-class StudentView(BaseView):
+class RequiredLoginView(View):
+    @method_decorator(csrf_exempt, name='dispatch')
+    @method_decorator(login_required, name='dispatch')
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+class ApplyFaceAuthView(RequiredLoginView):
+    def post(self, request):
+        user = Student.objects.get(id=request.user.id)
+        label = user.name
+        if not user:
+            return JsonResponse({'error': 'Invaild user'}, status=400)
+        if not user.name or not request.FILES.getlist('images'):
+            return JsonResponse({'error': 'Invaild data and images provided'}, status=400)
+        images = request.FILES.getlist('images')
+        images_paths = []
+        for image in images:
+            images_path = default_storage.save(f"train/{image.name}", image)
+            images_paths.append(images_path)
+        result = train(images_paths, label)
+        user.face_auth = True
+        user.save()
+        if hasattr(user, 'teacher'):
+            teacher = Teacher.objects.get(id=request.user.id)
+            return JsonResponse({'train':result, 'teacher':teacher.info()})
+        elif hasattr(user, 'student'):
+            student = Student.objects.get(id=request.user.id)
+            return JsonResponse({'train':result, 'student':student.info()})
+        else:
+            return JsonResponse({'train':result, 'user':user.info()})
+
+class StudentView(RequiredLoginView):
     def get(self, request, student_id=None):
-        print('Hi',request.META.get(request.META.get('REMOTE_ADDR', '')))
         if student_id:
             try:
                 student = Student.objects.get(id=student_id)
@@ -61,21 +90,11 @@ class StudentView(BaseView):
         try:
             if Student.objects.filter(username=username).exists():
                 return JsonResponse({'error': 'Username already exists'}, status=400)
-
-            if not request.FILES.getlist('images'):
-                return JsonResponse({'error': 'No images provided'}, status=400)
-            images = request.FILES.getlist('images')
-            images_paths = []
-            for image in images:
-                images_path = default_storage.save(f"train/{image.name}", image)
-                images_paths.append(images_path)
-            result = train(images_paths, name)
-
             hashed_password = make_password(password)
             student = Student(name=name, username=username, password=hashed_password)
             student.full_clean()
             student.save()
-            return JsonResponse({'status': 'success', 'student': student.info(), 'train': result})
+            return JsonResponse({'status': 'success', 'student': student.info()})
         except ValidationError as e:
             return JsonResponse({'error': e}, status=400)
 
@@ -99,8 +118,7 @@ class StudentView(BaseView):
         except Student.DoesNotExist:
             return JsonResponse({'error': 'Student not found'}, status=404)
 
-@method_decorator(login_required, name='dispatch')
-class TeacherView(BaseView):
+class TeacherView(RequiredLoginView):
     def get(self, request, teacher_id=None):
         if teacher_id:
             try:
@@ -115,7 +133,6 @@ class TeacherView(BaseView):
     
     @method_decorator(admin_required, name='dispatch')
     def post(self, request):
-        data = json.loads(request.body)
         name = request.POST.get('name')
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -150,8 +167,7 @@ class TeacherView(BaseView):
         except Teacher.DoesNotExist:
             return JsonResponse({'error': 'Teacher not found'}, status=404)
 
-@method_decorator(login_required, name='dispatch')
-class ChangePasswordView(BaseView):
+class ChangePasswordView(RequiredLoginView):
     def post(self, request):
         old_password = request.POST.get('old_password')
         new_password = request.POST.get('new_password')
@@ -186,46 +202,44 @@ class LoginView(BaseView):
         else:
             return JsonResponse({'error': 'Invalid username or password'}, status=400)
 
-@csrf_exempt
-@login_required
-def face_auth(request):
-    if request.method == 'POST' and request.FILES.get('image'):
+class FaceAuthView(RequiredLoginView):
+    def post(self, request):
+        if not request.FILES.get('image') or not hasattr(request.user, 'student'):
+            return JsonResponse({'error': 'No image uploaded or invaild authentication'}, status=400)
         image_file = request.FILES['image']
-
         fs = FileSystemStorage(location='checkin/')
         filename = fs.save(image_file.name, image_file)
         file_url = fs.url(filename)
-
         image = Image.open(image_file)
         image = image.convert('RGB')
-
         buffered = BytesIO()
         image.save(buffered, format="JPEG")
-
-        face_auth_log = FaceAuthLog(image_data=buffered.getvalue(),)
-        face_auth_log.save()
-
         result = predict(image)
+        student = Student.objects.get(id=request.user.id)
+        is_valid = True if result == student.name else False
+        class_session_id = request.POST.get('class_session_id', None)
         os.remove(os.path.join('checkin/', filename))
-        return JsonResponse({
-            'label': result
-        })
-    else:
-        return JsonResponse({'error': 'No image uploaded or invalid method'}, status=400)
+        checkin = False
+        if class_session_id and is_valid:
+            class_session = ClassSession.objects.get(id=class_session_id)
+            student = Student.objects.get(id=request.user.id)
+            face_auth_log = FaceAuthLog(image_data=buffered.getvalue(),student=student, class_session=class_session, is_valid=is_valid)
+            face_auth_log.save()
+            checkin = True
+        return JsonResponse({'valid':is_valid, 'result':result, 'name':request.user.name, 'checkin':checkin,})
 
-@method_decorator(login_required, name='dispatch')
-class LogoutView(BaseView):
+class LogoutView(RequiredLoginView):
     def post(self, request):
         auth_logout(request)
         return JsonResponse({'status': 'success', 'message': 'Logged out successfully'})
 
-@method_decorator(login_required, name='dispatch')
-class ClassroomView(BaseView):
+class ClassroomView(RequiredLoginView):
     def get(self, request, classroom_id=None):
         if classroom_id:
             try:
                 classroom = Classroom.objects.get(id=classroom_id)
-                return JsonResponse({'classroom': classroom.info()})
+                class_sessions = ClassSession.objects.filter(classroom=classroom)
+                return JsonResponse({'classroom': classroom.info(), 'class_sessions':[class_session.info() for class_session in class_sessions]})
             except Classroom.DoesNotExist:
                 return JsonResponse({'error': 'Classroom not found'}, status=404)
         else:
@@ -239,13 +253,32 @@ class ClassroomView(BaseView):
 
     @method_decorator(staff_required, name='dispatch')
     def post(self, request):
-        name = request.POST.get('name', None)
-        start_time = request.POST.get('start_time', None)
-        end_time = request.POST.get('end_time', None)
+        data = json.loads(request.body)
+        name = data.get("name")
+        class_sessions = data.get("sessions", [])
+        if len(class_sessions) > 10:
+            return JsonResponse({"error": "Cannot create more than 10 sessions"}, status=400)
         user = request.user
-        classroom = Classroom(name=name, teacher=user)
-        classroom.save()
-        return JsonResponse({'status': 'success', 'classroom': classroom.info()})
+        classroom = Classroom.objects.create(name=name, teacher=user)
+        session_objects = []
+        for class_session in class_sessions:
+            day_of_week = class_session.get("day_of_week")
+            start_time = class_session.get("start_time")
+            end_time = class_session.get("end_time")
+            session_objects.append(
+                ClassSession(
+                    classroom=classroom,
+                    day_of_week=day_of_week,
+                    start_time=start_time,
+                    end_time=end_time
+                )
+            )
+        ClassSession.objects.bulk_create(session_objects)
+        return JsonResponse({
+                "status": "success",
+                "classroom": classroom.info(),
+                "sessions": [session.info() for session in classroom.classsession_set.all()]
+        })
 
     @method_decorator(staff_required, name='dispatch')
     def put(self, request, classroom_id):
@@ -269,10 +302,8 @@ class ClassroomView(BaseView):
         except Classroom.DoesNotExist:
             return JsonResponse({'error': 'Classroom not found'}, status=404)
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(staff_required, name='dispatch')
-class AttendanceView(BaseView):
-
+class AttendanceView(RequiredLoginView):
+    @method_decorator(staff_required, name='dispatch')
     def post(self, request):
         classroom_id =  request.POST.get('classroom_id', None)
         student_ids = request.POST.get('student_ids', None)
@@ -290,8 +321,7 @@ class AttendanceView(BaseView):
             score.save()
         return JsonResponse({'status': 'success', 'classroom':classroom.info()})
 
-@method_decorator(login_required, name='dispatch')
-class ScoreView(BaseView):
+class ScoreView(RequiredLoginView):
     def get(self, request, classroom_id=None):
         if hasattr(request.user, 'student'):
             student = Student.objects.get(id=request.user.id)
@@ -348,8 +378,7 @@ class ScoreView(BaseView):
             score.save()
             return JsonResponse({'status':'true', 'score':score.info()})
 
-@method_decorator(login_required, name='dispatch')
-class UserView(BaseView):
+class UserView(RequiredLoginView):
     def get(self, request):
         user = CustomUser.objects.get(id=request.user.id)
         if not user:

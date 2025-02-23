@@ -8,6 +8,7 @@ charset-normalizer==2.0.12
 coloredlogs==15.0.1
 dill==0.3.8
 Django==5.1.6
+django-cors-headers==4.7.0
 filelock==3.17.0
 flatbuffers==25.2.10
 frozenlist==1.5.0
@@ -25,6 +26,8 @@ pandas==2.2.2
 pillow==10.2.0
 propcache==0.2.1
 protobuf==5.29.3
+psycopg==3.2.5
+psycopg-binary==3.2.5
 pyarrow==19.0.1
 python-dateutil==2.9.0.post0
 pytz==2025.1
@@ -42,4 +45,3 @@ tzdata==2025.1
 urllib3==1.26.20
 xxhash==3.5.0
 yarl==1.18.3
-psycopg[binary]

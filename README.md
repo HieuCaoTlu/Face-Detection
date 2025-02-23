@@ -56,7 +56,7 @@ Domain: ```localhost:8000/``` (yêu cầu đăng nhập trước khi dùng)
 
 # Optional (Backup dữ liệu từ CSDL):
 ```bash
-docker exec -it postgres_service bash #truy cập bash của postgres
+docker exec -it postgres bash #truy cập bash của postgres
 pg_dump -U myuser -d mydatabase -F p -f /var/lib/postgresql/data/backup.sql #tạo backup
-docker cp postgres_service:/var/lib/postgresql/data/backup.sql ./backup.sql #copy backup ra thư mục làm việc ngoài docker
+docker cp postgres:/var/lib/postgresql/data/backup.sql ./backup.sql #copy backup ra thư mục làm việc ngoài docker
 ```

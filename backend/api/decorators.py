@@ -36,10 +36,10 @@ def admin_required(function):
 def staff_required(function):
     @wraps(function)
     def _wrapped_view(request, *args, **kwargs):
-        if not hasattr(request.user, 'teacher'):
+        if not (hasattr(request.user, 'teacher') or request.user.is_superuser):
             return HttpResponseForbidden("Bạn cần là giáo viên/giáo vụ để truy cập vào trang này.")
         return function(request, *args, **kwargs)
-    return _wrapped_view 
+    return _wrapped_view
 
 # def wifi_required(function):
 #     @wraps(function)

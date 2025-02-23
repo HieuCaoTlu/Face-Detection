@@ -3,7 +3,8 @@ from .views import *
 
 urlpatterns = [
     # Xác thực khuôn mặt (ok)
-    path('face_auth/', face_auth, name='face_auth'),
+    path('face_auth/', FaceAuthView.as_view(), name='face_auth'),
+    path('apply_face_auth/', ApplyFaceAuthView.as_view(), name='apply_face_auth'),
 
     # Account - Đăng nhập, đăng xuất, đổi mật khẩu
     path('login/', LoginView.as_view(), name='login'),

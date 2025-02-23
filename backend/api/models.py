@@ -153,10 +153,46 @@ class Score(BaseModel):
             'id': self.id
         }
 
+class EmbeddingData(models.Model):
+    embedding = ArrayField(models.FloatField(), size=512, blank=True, null=True)
+    label = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.embedding[:2]} {self.label}"
+
+class ClassSession(BaseModel):
+    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name='classroom')
+    DAYS_OF_WEEK = [
+        (2, 'Monday'),
+        (3, 'Tuesday'),
+        (4, 'Wednesday'),
+        (5, 'Thursday'),
+        (6, 'Friday'),
+        (7, 'Saturday'),
+        (8, 'Sunday'),
+    ]
+    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE)
+    day_of_week = models.IntegerField(choices=DAYS_OF_WEEK)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    def __str__(self):
+        return f"{self.classroom.name} - {dict(self.DAYS_OF_WEEK).get(self.day_of_week, "Unknown")} ({self.start_time} - {self.end_time})"
+
+    def info(self):
+        return {
+            'id': self.id,
+            'day_of_week': dict(self.DAYS_OF_WEEK).get(self.day_of_week, 'Unknown'),
+            'start_time': self.start_time.strftime("%H:%M:%S"),
+            'end_time': self.end_time.strftime("%H:%M:%S"),
+            'classroom_id': self.classroom.id
+        }
+
 class FaceAuthLog(BaseModel):
     image_data = models.BinaryField(blank=True, null=True)
     is_valid = models.BooleanField(default=False)
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='facial_auth_logs', blank=True, null=True)
+    class_session = models.ForeignKey(ClassSession, on_delete=models.SET_NULL, related_name='attendance_logs', null=True, blank=True)  # Không mất dữ liệu
+    student = models.ForeignKey(Student, on_delete=models.SET_NULL, related_name='facial_auth_logs', null=True, blank=True)  # Không mất dữ liệu
 
     def __str__(self):
         return f"{self.created_at}"
@@ -166,19 +202,8 @@ class FaceAuthLog(BaseModel):
         ordering = ("-created_at",)
 
     def get_image(self):
-        """
-        Hàm để chuyển dữ liệu nhị phân trong trường `image_data`
-        thành một đối tượng ảnh PIL.
-        """
         if self.image_data:
             # Chuyển từ binary thành ảnh PIL
             image = Image.open(BytesIO(self.image_data))
             return image
         return None
-
-class EmbeddingData(models.Model):
-    embedding = ArrayField(models.FloatField(), size=512, blank=True, null=True)
-    label = models.CharField(max_length=255, blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.embedding[:2]} {self.label}"

@@ -4,6 +4,7 @@ backend/api/face_recognition.onnx
 # === Backend ===
 myenv/
 __pycache__/
+migrations/
 checkin/
 train/
 *.pyc

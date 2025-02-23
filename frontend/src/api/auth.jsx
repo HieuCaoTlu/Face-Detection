@@ -1,7 +1,11 @@
 import request from "./axiosClient";
 
 export const login = async (username, password) => {
-    return request("POST", "/login/", { username, password });
+    const formData = new FormData();
+    formData.append("username", username);
+    formData.append("password", password);
+    const response = await request("POST", "/login/", formData)
+    return response
 };
 
 export const getUser = async () => {

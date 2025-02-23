@@ -6,7 +6,12 @@ from PIL import Image
 from .forms import *
 
 class FaceAuthLogAdmin(admin.ModelAdmin):
-    list_display = ('student', 'is_valid', 'image_preview')  # Thêm phương thức `image_preview`
+    list_display = ('student_name', 'is_valid', 'image_preview')
+    
+    def student_name(self, obj):
+        return obj.student.name if obj.student else "Unknown"
+        
+    student_name.short_description = "Student Name"  # Thêm phương thức `image_preview`
 
     def image_preview(self, obj):
         """Chuyển dữ liệu nhị phân thành ảnh và hiển thị trong Admin."""
@@ -38,3 +43,4 @@ admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(Student, StudentAdmin)
 admin.site.register(Teacher, TeacherAdmin)
 admin.site.register(EmbeddingData)
+admin.site.register(ClassSession)
