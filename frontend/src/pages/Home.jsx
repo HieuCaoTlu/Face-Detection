@@ -1,60 +1,95 @@
-import { useState } from "react";
-import { Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Box, Button } from "@mui/material";
-import { useAuth } from "../context/auth_context/useAuth"; // Lấy dữ liệu người dùng
-import CurrentTime from "../components/CurrentTime"; // Import component CurrentTime
+import { useState, useEffect } from "react";
+import { Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Box, Button, CircularProgress, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { useAuth } from "../context/auth_context/useAuth";
+import CurrentTime from "../components/CurrentTime";
 import { useTheme } from "@mui/material/styles";
-import CheckinDialog from "../components/CheckinDialog"; // Import component CheckinDialog
+import { getClassSessions } from "../api/sessionClass";
+import CameraComponent from "../components/Camera";
+import { useSnackbar } from "../context/snackbar_context/useSnackbar";
 
 export default function Home() {
-    const { user } = useAuth(); // Lấy dữ liệu người dùng
-    const [classrooms, setClassrooms] = useState([
-        { name: "Math 101", startTime: "09:00", endTime: "10:30", checkin: false },
-        { name: "Science 101", startTime: "11:00", endTime: "12:30", checkin: false },
-        { name: "History 101", startTime: "13:00", endTime: "14:30", checkin: true },
-    ]);
-    const [openDialog, setOpenDialog] = useState(false); // Trạng thái mở box
-    const [selectedClassroom, setSelectedClassroom] = useState(null); // Lớp học được chọn
+    const { user } = useAuth();
+    const [classrooms, setClassrooms] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [openDialog, setOpenDialog] = useState(false);
+    const [selectedClassroom, setSelectedClassroom] = useState(null);
+    const { showSnackbar } = useSnackbar();
     const theme = useTheme();
 
-    // Lấy lớp học chưa check-in tiếp theo
-    const nextClassroom = classrooms.find(classroom => !classroom.checkin);
-
-    // Hàm xử lý check-in
-    const handleCheckin = (classroom) => {
-        setClassrooms(prevClassrooms =>
-            prevClassrooms.map(c =>
-                c.name === classroom.name ? { ...c, checkin: true } : c
-            )
-        );
-        setSelectedClassroom(classroom); // Gán lớp học đã chọn
-        setOpenDialog(true); // Mở box
+    const fetchClassSessions = async () => {
+        setLoading(true);
+        try {
+            const sessions = await getClassSessions();
+            setClassrooms(sessions.map(session => ({
+                id: session.id,
+                name: session.classroom,
+                startTime: session.start_time,
+                endTime: session.end_time,
+                checkin: session.checkin,
+            })));
+        } catch (err) {
+            console.error("[API Error]:", err);
+            setError("Lỗi khi gọi API.");
+        } finally {
+            setLoading(false);
+        }
     };
 
+    useEffect(() => {
+        fetchClassSessions();
+    }, []);
+
+    const handleReload = () => {
+        sessionStorage.removeItem("classSessions");
+        fetchClassSessions();
+    };
+
+    const handleCheckin = (classroom) => {
+        if (user.face_auth) {
+            setSelectedClassroom(classroom);
+            setOpenDialog(true);
+        }
+        else showSnackbar("Bạn chưa cài đặt xác thực","error")
+    };
+
+    const nextClassroom = classrooms.find(classroom => !classroom.checkin);
+
     const handleCloseDialog = () => {
+        fetchClassSessions();
         setOpenDialog(false);
     };
 
+
+    const handleCheckinSuccess = () => {
+        setOpenDialog(false);
+        setTimeout(() => {  // Đợi một chút trước khi cập nhật
+            fetchClassSessions();
+        }, 500);  // 0.5 giây để đảm bảo cập nhật sau khi Dialog đóng
+    };
+
+
+    if (loading) {
+        return <CircularProgress />;
+    }
+
+    if (error) {
+        return <Typography color="error">{error}</Typography>;
+    }
+
     return (
         <>
-            <Typography
-                variant="h2"
-                gutterBottom
-                sx={{
-                    fontWeight: "bold",
-                    marginTop: { xs: 3, md: 5 },
-                    WebkitBackgroundClip: "text",
-                }}
-            >
+            <Typography variant="h2" gutterBottom sx={{ fontWeight: "bold", marginTop: { xs: 3, md: 5 } }}>
                 Xin chào, {user?.name || "Khách"}
             </Typography>
 
             <Grid container spacing={2}>
-                {/* Thời gian hiện tại và số lớp đã check-in */}
                 <Grid item xs={12} md={6}>
                     <Box sx={{
                         border: "1px solid #ddd", padding: 2, borderRadius: 2,
-                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)", // Bóng nhẹ
-                        backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff", // Màu nền ngả đen khi dark, trắng khi light
+                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)",
+                        backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff",
                     }}>
                         <Typography variant="h7" gutterBottom>
                             Thời gian hiện tại
@@ -62,17 +97,12 @@ export default function Home() {
                         <CurrentTime />
                     </Box>
                 </Grid>
-
                 <Grid item xs={12} md={6}>
-                    <Box
-                        sx={{
-                            border: "1px solid #ddd",
-                            padding: 2,
-                            borderRadius: 2,
-                            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)",
-                            backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff", // Bóng nhẹ
-                        }}
-                    >
+                    <Box sx={{
+                        border: "1px solid #ddd", padding: 2, borderRadius: 2,
+                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)",
+                        backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff",
+                    }}>
                         <Typography variant="h7" gutterBottom>
                             Lớp cần điểm danh tiếp theo
                         </Typography>
@@ -81,31 +111,33 @@ export default function Home() {
                         </Typography>
                     </Box>
                 </Grid>
-
                 <Grid item xs={12}>
-                    {/* Bảng hiển thị danh sách lớp học */}
                     <TableContainer sx={{
                         border: "1px solid #ddd", borderRadius: 2,
                         backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff",
                         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
+                        position: "relative"
                     }}>
-                        <Typography variant="h6" sx={{
-                            fontWeight: "bold", padding: 3,
-                        }}>
-                            Danh sách các lớp học
-                        </Typography>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 2 }}>
+                            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                                Danh sách các lớp học
+                            </Typography>
+                            <IconButton onClick={handleReload}>
+                                <RefreshIcon />
+                            </IconButton>
+                        </Box>
                         <Table>
                             <TableHead>
                                 <TableRow>
                                     <TableCell sx={{ fontSize: "16px" }}>Lớp học</TableCell>
                                     <TableCell sx={{ fontSize: "16px" }}>Thời gian bắt đầu</TableCell>
                                     <TableCell sx={{ fontSize: "16px" }}>Thời gian kết thúc</TableCell>
-                                    <TableCell sx={{ fontSize: "16px" }}>Check-in</TableCell>
+                                    <TableCell sx={{ fontSize: "16px" }}>Điểm danh</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {classrooms.map((classroom) => (
-                                    <TableRow key={classroom.name}>
+                                    <TableRow key={classroom.id}>
                                         <TableCell sx={{ fontSize: "16px" }}>{classroom.name}</TableCell>
                                         <TableCell sx={{ fontSize: "16px" }}>{classroom.startTime}</TableCell>
                                         <TableCell sx={{ fontSize: "16px" }}>{classroom.endTime}</TableCell>
@@ -116,20 +148,28 @@ export default function Home() {
                                                 onClick={() => handleCheckin(classroom)}
                                                 disabled={classroom.checkin}
                                             >
-                                                {classroom.checkin ? "Đã check-in" : "Check-in"}
+                                                {classroom.checkin ? "Đã điểm danh" : "Điểm danh"}
                                             </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
-
                     </TableContainer>
                 </Grid>
             </Grid>
 
-            {/* Sử dụng CheckinDialog */}
-            <CheckinDialog open={openDialog} onClose={handleCloseDialog} selectedClassroom={selectedClassroom} />
+            <Dialog open={openDialog} onClose={handleCloseDialog}>
+                <DialogTitle>Điểm danh</DialogTitle>
+                <DialogContent>
+                    <CameraComponent id={selectedClassroom?.id || -1} onSuccess={handleCheckinSuccess} />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog} color="primary">
+                        Đóng
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </>
     );
-};
+}

@@ -3,8 +3,9 @@ import * as faceapi from "face-api.js";
 import { Button, Typography, Box, CircularProgress } from "@mui/material";
 import { useSnackbar } from "../context/snackbar_context/useSnackbar";
 import { faceAuth } from "../api/checkin";
+import PropTypes from "prop-types";
 
-export default function CameraComponent() {
+export default function CameraComponent({ id, onSuccess }) {
     const { showSnackbar } = useSnackbar();
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -40,8 +41,11 @@ export default function CameraComponent() {
         if (shouldShowSnackbar) {
             showSnackbar("Điểm danh thành công!", "success");
             setShouldShowSnackbar(false);
+            if (onSuccess) {
+                onSuccess();
+            }
         }
-    }, [shouldShowSnackbar, showSnackbar]);
+    }, [shouldShowSnackbar, showSnackbar, onSuccess]);
 
     const startCamera = async () => {
         setCapturedImages([]);
@@ -134,7 +138,7 @@ export default function CameraComponent() {
                 const file = new File([blob], "best_face.jpg", { type: "image/jpeg" });
 
                 // Tạo form-data
-                faceAuth(file)
+                faceAuth(file, id)
 
                 // Simulate upload (thay bằng API thực tế)
                 const imageUrl = URL.createObjectURL(file);
@@ -168,4 +172,9 @@ export default function CameraComponent() {
             {isProcessing && !bestImage && <CircularProgress />}
         </Box>
     );
+}
+
+CameraComponent.propTypes = {
+    id: PropTypes.number.isRequired,
+    onSuccess: PropTypes.func,
 }

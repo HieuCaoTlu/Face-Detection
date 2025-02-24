@@ -14,6 +14,10 @@ export default function Login() {
     const onSubmit = async (e) => {
         e.preventDefault();
         try {
+            if (username.length < 1 || password < 1) {
+                showSnackbar(`Vui lòng nhập đủ thông tin!`, 'error');
+                return;
+            }
             // Gọi hàm handleLogin từ useAuth và truyền tên người dùng, mật khẩu
             await handleLogin(username, password);
             showSnackbar('Đăng nhập thành công!', 'success');
@@ -21,7 +25,7 @@ export default function Login() {
                 navigate('/');
             }, 1000); // Nếu đăng nhập thành công, điều hướng về trang chính
         } catch (error) {
-            console.error("Đăng nhập thất bại:", error);
+            showSnackbar(error, 'error');
             // Có thể hiển thị thông báo lỗi ở đây nếu cần
         }
     };

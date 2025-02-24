@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { getUser, logout, login } from "../../api/auth";
 import { AuthContext } from "./AuthContext";
+import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 
 export const AuthProvider = ({ children }) => {
+    const navigate = useNavigate();
     // Lấy user từ sessionStorage nếu có
     const [user, setUser] = useState(() => {
         const savedUser = sessionStorage.getItem("user");
@@ -28,8 +30,8 @@ export const AuthProvider = ({ children }) => {
                 role: loginResponse.data.role // Thêm trường role vào user
             })
         } catch (error) {
-            console.error("Login failed:", error);
-            throw error;
+            const errorMessage = error.response?.data?.error || "Đăng nhập thất bại!";
+            throw new Error(errorMessage);
         }
     };
 
@@ -37,7 +39,8 @@ export const AuthProvider = ({ children }) => {
         try {
             await logout();
             setUser(null);
-            window.location.href = "/login"
+            sessionStorage.removeItem("user");
+            navigate("/login");
         } catch (error) {
             console.error("Logout failed:", error);
         }

@@ -3,8 +3,9 @@ import * as faceapi from "face-api.js";
 import { Button, Typography, Box, CircularProgress } from "@mui/material";
 import { useSnackbar } from "../context/snackbar_context/useSnackbar";
 import { applyFaceAuth } from "../api/checkin";
+import PropTypes from "prop-types";
 
-export default function TrainCamera() {
+export default function TrainCamera({ onSuccess }) {
     const { showSnackbar } = useSnackbar();
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -38,8 +39,9 @@ export default function TrainCamera() {
 
     useEffect(() => {
         if (shouldShowSnackbar) {
-            showSnackbar("Điểm danh thành công!", "success");
-            setShouldShowSnackbar(false);
+            setTimeout(() => {
+                setShouldShowSnackbar(false);  
+            }, 2000);  
         }
     }, [shouldShowSnackbar, showSnackbar]);
 
@@ -138,12 +140,12 @@ export default function TrainCamera() {
 
         Promise.all(convertedImages).then(async (files) => {
             console.log("✅ Tất cả ảnh đã được chuyển đổi:", files);
-            await applyFaceAuth(files); 
+            await applyFaceAuth(files);
             setShouldShowSnackbar(true);
             setIsProcessing(false);
         });
 
-
+        onSuccess()
     };
 
     return (
@@ -168,4 +170,8 @@ export default function TrainCamera() {
             {isProcessing && !bestImage && <CircularProgress />}
         </Box>
     );
+}
+
+TrainCamera.propTypes = {
+    onSuccess: PropTypes.func.isRequired
 }

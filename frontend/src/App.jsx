@@ -10,7 +10,10 @@ import Profile from "./pages/Profile";
 import "./index.css";
 import Home from "./pages/Home";
 import { SnackbarProvider } from "./context/snackbar_context/SnackbarProvider";
-import TrainCamera from "./components/TrainCamera";
+import Score from "./pages/Score"
+import TrainCamera from "./components/TrainCamera"
+import Schedule from "./pages/Schedule";
+import Classroom from "./pages/Classroom";
 
 export const ColorModeContext = createContext({ toggleColorMode: () => { } });
 
@@ -39,22 +42,25 @@ export default function App() {
   );
 
   return (
-    <AuthProvider>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <SnackbarProvider>
-        <ColorModeContext.Provider value={colorMode}>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AuthProvider>
+          <ColorModeContext.Provider value={colorMode}>
+            <ThemeProvider theme={theme}>
+              <CssBaseline />
               <Routes>
                 <Route path='/login' element={<Login />} />
                 <Route path='/' element={<Layout><Home /></Layout>} />
                 <Route path='/profile' element={<Layout><Profile /></Layout>} />
-                <Route path='/test' element={<Layout><TrainCamera/> </Layout>} />
+                <Route path='/score' element={<Layout> <Score /> </Layout>} />
+                <Route path='/train' element={<Layout> <TrainCamera /> </Layout>} />
+                <Route path='/timetable' element={<Layout> <Schedule /> </Layout>} />
+                <Route path='/classroom' element={<Layout> <Classroom /> </Layout>} />
               </Routes>
-            </Router>
-          </ThemeProvider>
-        </ColorModeContext.Provider>
+            </ThemeProvider>
+          </ColorModeContext.Provider>
+        </AuthProvider>
       </SnackbarProvider>
-    </AuthProvider>
+    </Router>
   );
 }

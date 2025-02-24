@@ -1,11 +1,15 @@
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, IconButton, useMediaQuery, Box } from "@mui/material";
-import { Home, Person, Settings, Menu, Brightness4, Brightness7, ExitToApp } from "@mui/icons-material";
+import { Home, Person, Menu, Brightness1, Brightness2, ExitToApp } from "@mui/icons-material";
+import TableChartIcon from '@mui/icons-material/TableChart';
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import { useState, useContext } from "react";
 import SwipeableDrawer from "@mui/material/SwipeableDrawer";
 import { ColorModeContext } from "../App"; // Import context đổi theme
 import { AuthContext } from "../context/auth_context/AuthContext"; // Import context Auth
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { useAuth } from "../context/auth_context/useAuth";
+import SchoolIcon from '@mui/icons-material/School';
 
 const Sidebar = () => {
     const theme = useTheme();
@@ -14,16 +18,26 @@ const Sidebar = () => {
     const [open, setOpen] = useState(false);
     const colorMode = useContext(ColorModeContext); // Lấy function đổi theme
     const { handleLogout } = useContext(AuthContext); // Lấy function logout từ AuthProvider
+    const { user } = useAuth();
 
     const toggleDrawer = (state) => () => {
         setOpen(state);
     };
 
     const menuItems = [
-        { text: "Home", icon: <Home />, path: "/" },
-        { text: "Profile", icon: <Person />, path: "/profile" },
-        { text: "Settings", icon: <Settings />, path: "/settings" },
+        { text: "Trang chủ", icon: <Home />, path: "/" },
+        { text: "Cá nhân", icon: <Person />, path: "/profile" },
+        { text: "Thời khóa biểu", icon: <CalendarMonthIcon />, path: "/timetable" },
     ];
+    if (user?.role === "student") {
+        menuItems.push(
+            { text: "Bảng điểm", icon: <TableChartIcon />, path: "/score" },
+        );
+    }
+
+    if (user?.role === "teacher") {
+        menuItems.push({ text: "Quản lý lớp học", icon: <SchoolIcon />, path: "/classroom" });
+    }
 
     const drawerContent = (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -67,9 +81,9 @@ const Sidebar = () => {
                     }}
                 >
                     <ListItemIcon sx={{ color: theme.palette.text.primary }}>
-                        {theme.palette.mode === "dark" ? <Brightness7 /> : <Brightness4 />}
+                        {theme.palette.mode === "dark" ? <Brightness1 /> : <Brightness2 />}
                     </ListItemIcon>
-                    <ListItemText primary="Toggle Theme" sx={{ color: theme.palette.text.primary }} />
+                    <ListItemText primary="Đổi nền" sx={{ color: theme.palette.text.primary }} />
                 </ListItem>
 
                 {/* Nút đăng xuất */}
@@ -88,7 +102,7 @@ const Sidebar = () => {
                     <ListItemIcon sx={{ color: theme.palette.error.contrastText }}>
                         <ExitToApp />
                     </ListItemIcon>
-                    <ListItemText primary="Logout" />
+                    <ListItemText primary="Đăng xuất" />
                 </ListItem>
             </Box>
         </Box>

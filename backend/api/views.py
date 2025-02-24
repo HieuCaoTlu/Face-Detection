@@ -1,10 +1,14 @@
 #Packge Utils
+from django.utils.timezone import localdate, localtime
 from django.utils.decorators import method_decorator
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.files.storage import default_storage
+from datetime import datetime
 import json
 import os
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 
 #Package xử lí Auth và Account
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
@@ -38,7 +42,7 @@ class RequiredLoginView(View):
 
 class ApplyFaceAuthView(RequiredLoginView):
     def post(self, request):
-        user = Student.objects.get(id=request.user.id)
+        user = CustomUser.objects.get(id=request.user.id)
         label = user.name
         if not user:
             return JsonResponse({'error': 'Invaild user'}, status=400)
@@ -166,20 +170,39 @@ class TeacherView(RequiredLoginView):
             return JsonResponse({'status': 'success'})
         except Teacher.DoesNotExist:
             return JsonResponse({'error': 'Teacher not found'}, status=404)
-
 class ChangePasswordView(RequiredLoginView):
     def post(self, request):
-        old_password = request.POST.get('old_password')
-        new_password = request.POST.get('new_password')
-        if not old_password or not new_password:
-            return JsonResponse({'error': 'Missing old or new password'}, status=400)
-        user = CustomUser.objects.get(id=request.user.id)
-        if user.check_password(old_password):
-            user.set_password(new_password)
-            user.save()
-            return JsonResponse({'status': 'success'})
+        data = {
+            'old_password':request.POST.get('old_password'),
+            'new_password1':request.POST.get('new_password'),
+            'new_password2':request.POST.get('new_password'),
+        }
+        fm = PasswordChangeForm(user=request.user, data=data)
+        if fm.is_valid():
+            fm.save()
+            update_session_auth_hash(request, fm.user)
+            print('Successfully change password')
+            return JsonResponse({'status':'true'})
         else:
-            return JsonResponse({'error': 'Invalid old password'}, status=400)
+            return JsonResponse({'status':'false'},status=400)
+
+        
+        # if not old_password or not new_password:
+        #     return JsonResponse({'error': 'Missing old or new password'}, status=400)
+        
+        # user = CustomUser.objects.get(id=request.user.id)
+        # # Kiểm tra mật khẩu cũ
+        # if user.check_password(old_password):
+        #     # Đặt mật khẩu mới
+        #     user.set_password(new_password)
+        #     user.save()
+        #     # Đăng nhập lại người dùng với mật khẩu mới
+        #     user = authenticate(username=user.username, password=new_password)
+        #     update_session_auth_hash(request, user)
+        #     print('Đổi mật khẩu thành công!')
+        #     return JsonResponse({'status': 'success'})
+        # else:
+        #     return JsonResponse({'error': 'Invalid old password'}, status=400)
 
 class LoginView(BaseView):
     def post(self, request):
@@ -247,9 +270,18 @@ class ClassroomView(RequiredLoginView):
             if hasattr(request.user, 'teacher'):
                 teacher = Teacher.objects.get(id=request.user.id)
                 classrooms = Classroom.objects.filter(teacher=teacher)
+            elif hasattr(request.user, 'student'):
+                student = Student.objects.get(id=request.user.id)
+                classrooms = Classroom.objects.filter(students=student)
             else:
                 classrooms = Classroom.objects.all()
-            return JsonResponse({'classrooms': [classroom.info() for classroom in classrooms]})
+            result = []
+            for classroom in classrooms:
+                temp = classroom.info()
+                class_sessions = ClassSession.objects.filter(classroom=classroom)
+                temp['class_sessions'] = [class_session.info() for class_session in class_sessions]
+                result.append(temp)
+            return JsonResponse({'classrooms': result})
 
     @method_decorator(staff_required, name='dispatch')
     def post(self, request):
@@ -385,4 +417,34 @@ class UserView(RequiredLoginView):
             return JsonResponse({'error':'Người dùng không tồn tại'},status=400)
         return JsonResponse(user.info(), status=200)
 
-        
+class ClassSessionView(RequiredLoginView):
+    @method_decorator(student_required, name='dispatch')
+    def get(self, request):
+        day_param = request.GET.get('day', 'true').lower()
+        day = day_param in ['true', '1', 'yes']
+        student = Student.objects.get(id=request.user.id)
+        classrooms = Classroom.objects.filter(students=student)
+        class_sessions = None
+        today_date = localdate()
+        print(today_date)
+        if day:
+            today = datetime.today().isoweekday() + 1
+            print(f"Hôm nay là: {dict(ClassSession.DAYS_OF_WEEK).get(today, 'Unknown')}")
+            class_sessions = ClassSession.objects.filter(day_of_week=today, classroom__in=classrooms)
+        else:
+            class_sessions = ClassSession.objects.filter(classroom__in=classrooms)
+        class_sessions_data = []
+        for class_session in class_sessions:
+            face_auth = FaceAuthLog.objects.filter(student=student, class_session=class_session, created_at__date=today_date).first()
+            checkin = True if face_auth else False
+            info = class_session.info()
+            info['checkin'] = checkin
+            class_sessions_data.append(info)
+        return JsonResponse({'status': 'success', 'class_sessions': class_sessions_data})
+
+class DeleteAll(RequiredLoginView):
+    @method_decorator(staff_required, name='dispatch')
+    def post(self, request):
+        EmbeddingData.objects.all().delete()
+        CustomUser.objects.update(face_auth=False)
+        return JsonResponse({"message": "Đã xóa toàn bộ embeddings và reset face_auth."}, status=200)

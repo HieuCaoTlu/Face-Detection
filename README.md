@@ -22,9 +22,9 @@ localhost:5432 # url database
 ```
 
 # Tài khoản thử nghiệm (Admin, Sinh viên, Giáo viên)
-- admin | 1 
-- stu2 | trunghieu7a1
-- nam | trunghieu7a1
+- admin | trunghieu7a1 
+- stu | trunghieu8a1
+- tea | trunghieu7a1
 
 # Các API đã xây dựng
 Domain: ```localhost:8000/``` (yêu cầu đăng nhập trước khi dùng)
@@ -44,9 +44,10 @@ Domain: ```localhost:8000/``` (yêu cầu đăng nhập trước khi dùng)
 - classroom/<int:classroom_id>/ DELETE: xóa lớp học với id tương ứng
 - attendance/ POST: thêm nhiều sinh viên vào 1 lớp (ngăn cách bằng dấu phẩy) với form-data gồm classroom_id, student_ids
 
-4. Quản lý sinh viên: student/ có CRUD giống ở trên
-
-5. Quản lý giáo viên: teacher/ có CRUD giống ở trên
+4. Quản lý sinh viên: student/ 
+5. Quản lý giáo viên: teacher/ 
+6. Quản lý điểm số: score/ 
+7. Quản lý ca học: class_session/ 
 
 # Thêm một vài phương pháp lấy Default Gateway của Linux, Windows
 ```bash

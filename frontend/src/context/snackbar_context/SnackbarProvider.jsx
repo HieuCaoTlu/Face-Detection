@@ -7,8 +7,9 @@ export const SnackbarProvider = ({ children }) => {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
 
-  const showSnackbar = (message) => {
-    setMessage(message);
+  const showSnackbar = (message, type) => {
+    const emoji = type === 'success' ? '✅' : '❌';
+    setMessage(`${emoji} ${message}`);
     setOpen(true);
   };
 

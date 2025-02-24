@@ -7,6 +7,8 @@ from PIL import Image
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
 from django.contrib.postgres.fields import ArrayField
+import pytz
+from django.utils.timezone import now
 
 class BaseModelManager(models.Manager):
     def get_queryset(self):
@@ -18,6 +20,13 @@ class BaseModel(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     objects = BaseModelManager()
     all_objects = models.Manager()
+
+    def save(self, *args, **kwargs):
+        vietnam_tz = pytz.timezone("Asia/Ho_Chi_Minh")
+        if not self.created_at:
+            self.created_at = now().astimezone(vietnam_tz)
+        self.updated_at = now().astimezone(vietnam_tz)
+        super().save(*args, **kwargs)
 
     def soft_delete(self):
         self.deleted_at = datetime.now()
@@ -95,8 +104,8 @@ class Teacher(CustomUser):
 
 class Classroom(BaseModel):
     name = models.CharField(max_length=255)
-    teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='classrooms')
-    students = models.ManyToManyField(Student, related_name='classroóm', blank=True)
+    teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='teachers')
+    students = models.ManyToManyField(Student, related_name='students', blank=True)
     start_time = models.TimeField(blank=True, null=True)
     end_time = models.TimeField(blank=True, null=True)
 
@@ -111,7 +120,6 @@ class Classroom(BaseModel):
             'start_time': self.start_time,
             'end_time': self.end_time,
             'id': self.id,
-            'students': [student.info() for student in students]
         }
 
 class Report(BaseModel):
@@ -183,9 +191,10 @@ class ClassSession(BaseModel):
         return {
             'id': self.id,
             'day_of_week': dict(self.DAYS_OF_WEEK).get(self.day_of_week, 'Unknown'),
-            'start_time': self.start_time.strftime("%H:%M:%S"),
-            'end_time': self.end_time.strftime("%H:%M:%S"),
-            'classroom_id': self.classroom.id
+            'start_time': self.start_time.strftime("%H:%M"),
+            'end_time': self.end_time.strftime("%H:%M"),
+            'classroom_id': self.classroom.id,
+            'classroom': self.classroom.name
         }
 
 class FaceAuthLog(BaseModel):
