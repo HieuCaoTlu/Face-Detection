@@ -4,6 +4,9 @@ import { getClassroomScore, getTeacherClassrooms } from "../api/classroom";
 import EditIcon from '@mui/icons-material/Edit';
 import DoDisturbIcon from '@mui/icons-material/DoDisturb';
 import { updateScores } from "../api/score";
+import { getStudentPrint } from "../api/admin";
+import LocalPrintshopIcon from '@mui/icons-material/LocalPrintshop';
+
 const daysOfWeekMap = {
   "Monday": "Thứ Hai",
   "Tuesday": "Thứ Ba",
@@ -63,6 +66,21 @@ export default function Classroom() {
 
   const handleToggleEditingScores = () => {
     setEditingScores(!editingScores);
+  };
+
+  const handlePrint = async () => {
+    if (selectedClass) {
+      try {
+        const response = await getStudentPrint(selectedClass.id);
+        if (response?.data?.url) {
+          window.location.href = response.data.url;
+        } else {
+          console.error("Không tìm thấy URL tải file.");
+        }
+      } catch (error) {
+        console.error("Lỗi tải danh sách sinh viên:", error);
+      }
+    }
   };
 
   const handleSaveScores = async () => {
@@ -154,6 +172,23 @@ export default function Classroom() {
           </>
 
         )}
+
+        {selectedClass && (
+          <>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={handlePrint}
+              startIcon={<LocalPrintshopIcon />}
+              sx={{ marginBottom: 2 }}
+            >
+              In danh sách sinh viên
+            </Button>
+
+          </>
+
+        )}
+
 
         {selectedClass && scores.length > 0 && editingScores && (
           <Button

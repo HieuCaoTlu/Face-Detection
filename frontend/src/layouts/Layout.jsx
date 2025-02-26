@@ -14,10 +14,10 @@ export default function Layout({ children }) {
         <div style={{
             display: "flex",
             backgroundColor: theme.palette.mode === "dark" ? "rgba(33, 33, 33, 0.9)" : "#f0f6fc",
-            height: "100vh"
+            minHeight: "100vh",
         }}>
             <Sidebar />
-            <div style={{ flexGrow: 1, padding: "16px", color: theme.palette.text.primary }}>
+            <div style={{ flexGrow: 1, padding: "16px", color: theme.palette.text.primary, maxWidth: "100%", overflowX: "auto" }}>
                 <Container maxWidth="2xlg" sx={{ padding: 3 }}>
                     {children}
                 </Container>

@@ -29,6 +29,8 @@ const request = (method, url, data = null) => {
             options.data = data;
             if (data instanceof FormData) {
                 options.headers["Content-Type"] = "multipart/form-data";
+            } else {
+                options.headers["Content-Type"] = "application/json";
             }
         } else if (method === "PUT" || method === "PATCH") {
             options.data = JSON.stringify(data);

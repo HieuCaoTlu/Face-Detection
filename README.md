@@ -4,6 +4,15 @@
 - **Frontend**: React (Vite) ứng dụng chạy trên port 5000
 - **Database**: PostgresSQL chạy trên port 5432
 
+# Trước khi khởi động Backend
+- Vui lòng tạo 1 file .env ở trong thư mục root/backend (cùng cấp với manage.py)
+- Tạo tài khoản Cloudinary và lấy các thông tin cần thiết, điền vào ENV như sau:
+```bash
+CLOUDINARY_NAME=abc
+CLOUDINARY_API_KEY=abc
+CLOUDINARY_API_SECRET=abc
+```
+
 # Các Lớp Cơ Sở Đã Thêm
 - **Classroom**: Quản lý lớp học.
 - **Student**: Quản lý thông tin học viên.

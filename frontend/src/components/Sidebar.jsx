@@ -39,6 +39,10 @@ const Sidebar = () => {
         menuItems.push({ text: "Quản lý lớp học", icon: <SchoolIcon />, path: "/classroom" });
     }
 
+    if (user?.role === "admin") {
+        menuItems.push({ text: "Quản trị", icon: <Home />, path: "/head" });
+    }
+
     const drawerContent = (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
             <List sx={{ flexGrow: 1 }}>

@@ -4,6 +4,7 @@ from django.utils.decorators import method_decorator
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 from datetime import datetime
 import json
 import os
@@ -19,7 +20,7 @@ from PIL import Image
 from io import BytesIO
 
 #Package xử lí HTTP
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views import View
@@ -28,6 +29,7 @@ from django.views import View
 from .ai import *
 from .decorators import *
 from .models import *
+from .process import *
 
 class BaseView(View):
     @method_decorator(csrf_exempt, name='dispatch')
@@ -170,6 +172,7 @@ class TeacherView(RequiredLoginView):
             return JsonResponse({'status': 'success'})
         except Teacher.DoesNotExist:
             return JsonResponse({'error': 'Teacher not found'}, status=404)
+
 class ChangePasswordView(RequiredLoginView):
     def post(self, request):
         data = {
@@ -258,11 +261,22 @@ class LogoutView(RequiredLoginView):
 
 class ClassroomView(RequiredLoginView):
     def get(self, request, classroom_id=None):
+        student_query = request.GET.get('student', 'false').lower() == 'true'
+        
         if classroom_id:
             try:
                 classroom = Classroom.objects.get(id=classroom_id)
                 class_sessions = ClassSession.objects.filter(classroom=classroom)
-                return JsonResponse({'classroom': classroom.info(), 'class_sessions':[class_session.info() for class_session in class_sessions]})
+                response_data = {
+                    'classroom': classroom.info(), 
+                    'class_sessions': [class_session.info() for class_session in class_sessions]
+                }
+                
+                if student_query:
+                    students = classroom.students.all()
+                    response_data['students'] = [student.info() for student in students]
+                
+                return JsonResponse(response_data)
             except Classroom.DoesNotExist:
                 return JsonResponse({'error': 'Classroom not found'}, status=404)
         else:
@@ -275,12 +289,19 @@ class ClassroomView(RequiredLoginView):
                 classrooms = Classroom.objects.filter(students=student)
             else:
                 classrooms = Classroom.objects.all()
+            
             result = []
             for classroom in classrooms:
                 temp = classroom.info()
                 class_sessions = ClassSession.objects.filter(classroom=classroom)
                 temp['class_sessions'] = [class_session.info() for class_session in class_sessions]
+                
+                if student_query:
+                    students = classroom.students.all()
+                    temp['students'] = [student.info() for student in students]
+                
                 result.append(temp)
+            
             return JsonResponse({'classrooms': result})
 
     @method_decorator(staff_required, name='dispatch')
@@ -288,10 +309,12 @@ class ClassroomView(RequiredLoginView):
         data = json.loads(request.body)
         name = data.get("name")
         class_sessions = data.get("sessions", [])
-        if len(class_sessions) > 10:
+        student_ids = data.get("student_ids", [])
+        teacher_id = data.get("teacher_id", 0)
+        if len(class_sessions) > 10 or teacher_id == 0:
             return JsonResponse({"error": "Cannot create more than 10 sessions"}, status=400)
-        user = request.user
-        classroom = Classroom.objects.create(name=name, teacher=user)
+        teacher = Teacher.objects.filter(id=teacher_id).first()
+        classroom = Classroom.objects.create(name=name, teacher=teacher)
         session_objects = []
         for class_session in class_sessions:
             day_of_week = class_session.get("day_of_week")
@@ -306,10 +329,20 @@ class ClassroomView(RequiredLoginView):
                 )
             )
         ClassSession.objects.bulk_create(session_objects)
+        if len(student_ids):
+            student_ids = [int(s.strip()) for s in student_ids.split(",") if s.strip().isdigit()]
+            students = Student.objects.filter(id__in=student_ids)
+            classroom.students.add(*students)
+            for student in students:
+                score = Score(student=student, classroom=classroom)
+                score.full_clean()
+                score.save()
+        
         return JsonResponse({
                 "status": "success",
                 "classroom": classroom.info(),
-                "sessions": [session.info() for session in classroom.classsession_set.all()]
+                "sessions": [session.info() for session in classroom.classsession_set.all()],
+                "students": [student.info() for student in classroom.students.all()]
         })
 
     @method_decorator(staff_required, name='dispatch')
@@ -448,3 +481,61 @@ class DeleteAll(RequiredLoginView):
         EmbeddingData.objects.all().delete()
         CustomUser.objects.update(face_auth=False)
         return JsonResponse({"message": "Đã xóa toàn bộ embeddings và reset face_auth."}, status=200)
+
+class GetAllStudent(RequiredLoginView):
+    @method_decorator(staff_required, name='dispatch')
+    def post(self, request):
+        file = request.FILES.get('file')
+        if not file:
+            return JsonResponse({'error': 'Vui lòng tải lên file Excel'}, status=400)
+        file_path = default_storage.save(f'temp/{file.name}', ContentFile(file.read()))
+        try:
+            student_ids = get_student(default_storage.path(file_path))
+            print(student_ids)
+            students = [Student.objects.get(username=s_id).info() for s_id in student_ids]
+            return JsonResponse({'students': students})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+        finally:
+            default_storage.delete(file_path)
+
+
+class ReadStudentExcel(RequiredLoginView):
+    @method_decorator(staff_required, name='dispatch')
+    def get(self, request):
+        classroom_id = request.GET.get('classroom_id')
+        if not classroom_id:
+            return JsonResponse({'error': 'Vui lòng cung cấp classroom_id'}, status=400)
+        output_filename = f'classroom_{classroom_id}_students.xlsx'
+        try:
+            url = get_student_excel(classroom_id, output_filename)
+            return JsonResponse({'url': url})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    @method_decorator(staff_required, name='dispatch')
+    def post(self, request):
+        """Nhận file Excel, xử lý sinh viên và lưu kết quả bằng default_storage"""
+        file = request.FILES.get('file')
+        role = request.POST.get("role","teacher")
+        if not file:
+            return JsonResponse({'error': 'Vui lòng tải lên file Excel'}, status=400)
+
+        # Lưu file gốc vào storage
+        file_path = default_storage.save(f'temp/{file.name}', ContentFile(file.read()))
+        
+        # Tạo file đầu ra trong storage
+        output_filename = f'processed_{file.name}'
+        output_path = f'{output_filename}'
+        try:
+            url = make_user(default_storage.path(file_path), default_storage.path(output_path), role)
+            return JsonResponse({'url': url})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+        finally:
+            default_storage.delete(file_path)
+
+    @method_decorator(staff_required, name='dispatch')
+    def delete(self, request):
+        Student.objects.all().delete()
+        return JsonResponse({'message': f'Đã xóa mọi sinh viên!'})

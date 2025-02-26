@@ -10,6 +10,7 @@ train/
 *.pyc
 *.pyo
 *.log
+*.xlsx
 
 # === Frontend (React, Node.js) ===
 node_modules/

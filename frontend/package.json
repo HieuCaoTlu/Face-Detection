@@ -19,6 +19,7 @@
     "face-api.js": "^0.22.2",
     "prop-types": "^15.8.1",
     "react": "^19.0.0",
+    "react-confetti": "^6.2.3",
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.29.0"
   },

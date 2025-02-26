@@ -6,6 +6,8 @@ urlpatterns = [
     path('face_auth/', FaceAuthView.as_view(), name='face_auth'),
     path('apply_face_auth/', ApplyFaceAuthView.as_view(), name='apply_face_auth'),
     path('dev_face/', DeleteAll.as_view(), name='dev_util'),
+    path('add_students/', ReadStudentExcel.as_view(), name='dev_student'),
+    path('all_student/', GetAllStudent.as_view(), name='dev_get_student'),
 
     # Account - Đăng nhập, đăng xuất, đổi mật khẩu
     path('login/', LoginView.as_view(), name='login'),

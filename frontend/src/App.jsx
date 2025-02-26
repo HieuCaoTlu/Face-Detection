@@ -14,6 +14,11 @@ import Score from "./pages/Score"
 import TrainCamera from "./components/TrainCamera"
 import Schedule from "./pages/Schedule";
 import Classroom from "./pages/Classroom";
+import Admin from "./pages/Admin";
+import AdminClass from "./pages/AdminClass";
+import ClassroomManager from "./pages/MakeClassroom";
+import AdminStudent from "./pages/AdminStudent";
+import AdminTeacher from "./pages/AdminTeacher";
 
 export const ColorModeContext = createContext({ toggleColorMode: () => { } });
 
@@ -56,6 +61,11 @@ export default function App() {
                 <Route path='/train' element={<Layout> <TrainCamera /> </Layout>} />
                 <Route path='/timetable' element={<Layout> <Schedule /> </Layout>} />
                 <Route path='/classroom' element={<Layout> <Classroom /> </Layout>} />
+                <Route path='/head' element={<Layout> <Admin /> </Layout>} />
+                <Route path='/admin_class' element={<Layout> <AdminClass /> </Layout>} />
+                <Route path='/admin_make' element={<Layout> <ClassroomManager /> </Layout>} />
+                <Route path='/admin_student' element={<Layout> <AdminStudent /> </Layout>} />
+                <Route path='/admin_teacher' element={<Layout> <AdminTeacher /> </Layout>} />
               </Routes>
             </ThemeProvider>
           </ColorModeContext.Provider>

@@ -11,10 +11,20 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import environ
+import os
+
+env = environ.Env()
+environ.Env.read_env()
+
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+CLOUDINARY_NAME = os.getenv('CLOUDINARY_NAME')
+CLOUDINARY_API_KEY=os.getenv('CLOUDINARY_API_KEY')
+CLOUDINARY_API_SECRET=os.getenv('CLOUDINARY_API_SECRET')
 TIME_ZONE = 'Asia/Ho_Chi_Minh'
 USE_TZ = True  # Giữ nguyên để Django quản lý múi giờ chuẩn
 
