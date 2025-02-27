@@ -106,8 +106,8 @@ class Classroom(BaseModel):
     name = models.CharField(max_length=255)
     teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='teachers')
     students = models.ManyToManyField(Student, related_name='students', blank=True)
-    start_time = models.TimeField(blank=True, null=True)
-    end_time = models.TimeField(blank=True, null=True)
+    start_date = models.DateTimeField(blank=True, null=True)
+    weeks = models.IntegerField(default=1)
 
     def __str__(self):
         return self.name
@@ -117,8 +117,8 @@ class Classroom(BaseModel):
         return {
             'name': self.name,
             'teacher': self.teacher.name,
-            'start_time': self.start_time,
-            'end_time': self.end_time,
+            'start_date': str(self.start_date),
+            'weeks': self.weeks,
             'id': self.id,
         }
 

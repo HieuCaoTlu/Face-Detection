@@ -4,8 +4,17 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { getTeacher, makeClassroom, postStudentPrint } from "../api/admin";
 import { useSnackbar } from "../context/snackbar_context/useSnackbar";
 import { useNavigate } from "react-router-dom";
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 
-const availableTimes = ["08:00:00", "10:00:00", "13:00:00", "15:30:00", "17:30:00"];
+const availableTimes = [
+    "07:00:00", "08:00:00", "09:00:00", "10:00:00", "11:00:00", "12:00:00",
+    "13:00:00", "14:00:00", "15:00:00", "16:00:00", "17:00:00", "18:00:00",
+    "19:00:00", "20:00:00", "21:00:00", "22:00:00"
+];
+
 const availableDays = [
     { label: "Thứ Hai", value: 2 },
     { label: "Thứ Ba", value: 3 },
@@ -22,6 +31,8 @@ export default function ClassroomManager() {
     const [teachers, setTeachers] = useState([]);
     const [selectedTeacher, setSelectedTeacher] = useState(null);
     const [className, setClassName] = useState("");
+    const [classWeeks, setClassWeeks] = useState("");
+    const [classStartDate, setClassStartDate] = useState("");
     const [sessions, setSessions] = useState([]);
     const [studentIds, setStudentIds] = useState(new Set());
     const [students, setStudents] = useState([]);
@@ -70,15 +81,17 @@ export default function ClassroomManager() {
     };
 
     const handleSubmit = async () => {
-        if (!selectedTeacher || sessions.length === 0) return alert("Vui lòng nhập đủ thông tin");
+        if (!selectedTeacher || sessions.length === 0 || !classWeeks || !classStartDate) {
+            return alert("Vui lòng nhập đủ thông tin");
+        }
         try {
-            await makeClassroom(className, sessions, selectedTeacher, Array.from(studentIds).join(","));
-            showSnackbar("Tạo lớp thành công!", "success")
+            await makeClassroom(className, classWeeks, classStartDate, sessions, selectedTeacher, Array.from(studentIds).join(","));
+            showSnackbar("Tạo lớp thành công!", "success");
             setTimeout(() => {
                 navigate("/admin_class");
             }, 1000);
         } catch (error) {
-            showSnackbar(`Tạo lớp thất bại! ${error}`, "error")
+            showSnackbar(`Tạo lớp thất bại! ${error}`, "error");
         }
     };
 
@@ -87,7 +100,37 @@ export default function ClassroomManager() {
             <Typography variant="h2" gutterBottom sx={{ fontWeight: "bold", marginTop: { xs: 3, md: 5 } }}>
                 Tạo lớp học
             </Typography>
-            <TextField label="Tên lớp học" fullWidth margin="normal" value={className} onChange={(e) => setClassName(e.target.value)} />
+            <Grid container spacing={2} alignItems="center">
+                <Grid item xs={4}>
+                    <TextField
+                        label="Tên lớp học"
+                        fullWidth
+                        margin="normal"
+                        value={className}
+                        onChange={(e) => setClassName(e.target.value)}
+                    />
+                </Grid>
+                <Grid item xs={4}>
+                    <TextField
+                        label="Số tuần học"
+                        fullWidth
+                        margin="normal"
+                        value={classWeeks}
+                        onChange={(e) => setClassWeeks(e.target.value)}
+                    />
+                </Grid>
+                <Grid item xs={4}>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                            label="Ngày bắt đầu"
+                            format="DD-MM-YYYY"
+                            value={classStartDate ? dayjs(classStartDate, "DD-MM-YYYY") : null}
+                            onChange={(newValue) => setClassStartDate(newValue ? newValue.format("DD-MM-YYYY") : "")}
+                            slotProps={{ textField: { fullWidth: true, margin: "normal" } }}
+                        />
+                    </LocalizationProvider>
+                </Grid>
+            </Grid>
 
             <div style={{ position: "relative" }}>
                 <TextField
@@ -148,6 +191,9 @@ export default function ClassroomManager() {
                 <Button variant="outlined" component="label" startIcon={<CloudUploadIcon />}>
                     Tải lên danh sách sinh viên
                     <input type="file" hidden accept=".xlsx" onChange={handleFileUpload} />
+                </Button>
+                <Button variant="outlined" component="a" href="https://docs.google.com/spreadsheets/d/1r8C_K6IgQCVyBMhSNS14KQhyE4zVKM-Y/edit?usp=sharing&ouid=116080108977609860433&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer">
+                    Nhận Excel mẫu
                 </Button>
                 <Button variant="outlined" color="secondary" sx={{ cursor: "default" }}>Danh sách sinh viên: {students.length}</Button>
             </Box>

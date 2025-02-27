@@ -118,7 +118,7 @@ export default function AdminTeacher() {
                                         <TableCell>{student.id}</TableCell>
                                         <TableCell>{student.name}</TableCell>
                                         <TableCell>{student.username}</TableCell>
-                                        <TableCell>{student.gender === "N" ? "Nam" : "Nữ"}</TableCell>
+                                        <TableCell>{student.gender === "M" ? "Nam" : "Nữ"}</TableCell>
                                         <TableCell>{student.phone_number}</TableCell>
                                         <TableCell>{student.dob}</TableCell>
                                     </TableRow>

@@ -40,9 +40,11 @@ export const getTeacher = async() => {
     return response.data.teachers
 }
 
-export const makeClassroom = async (name, sessions, teacher_id, student_ids) => {
+export const makeClassroom = async (name, weeks, start_date, sessions, teacher_id, student_ids) => {
     const body = {
         name: name,
+        weeks: weeks,
+        start_date: start_date,
         sessions: sessions,
         teacher_id: teacher_id,
         student_ids: student_ids

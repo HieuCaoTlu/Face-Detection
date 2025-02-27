@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import random
 import string
-from .models import Student, Classroom, Teacher
+from .models import Student, Classroom, Teacher, Score
 from django.contrib.auth.hashers import make_password
 from django.core.files.storage import default_storage
 
@@ -73,7 +73,7 @@ def make_user(input_file, output_file, role="student"):
     
 def get_student(file):
     df = pd.read_excel(file, dtype=str)
-    student_ids = [str(x).strip() for x in df['Username'].values]
+    student_ids = [str(x).strip() for x in df['username'].values]
     return student_ids
 
 def get_student_excel(classroom_id, output_file):
@@ -90,7 +90,8 @@ def get_student_excel(classroom_id, output_file):
         "Username": student.username,
         "Giới tính": student.gender,
         "Ngày sinh": student.dob.strftime('%d/%m/%Y') if student.dob else "",
-        "Số điện thoại": student.phone_number
+        "Số điện thoại": student.phone_number,
+        "Điểm": Score.objects.filter(student=student, classroom=classroom).first().score if Score.objects.filter(student=student, classroom=classroom).exists() else None
     } for student in students]
     
     df = pd.DataFrame(data)

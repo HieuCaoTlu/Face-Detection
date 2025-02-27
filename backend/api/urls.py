@@ -8,6 +8,7 @@ urlpatterns = [
     path('dev_face/', DeleteAll.as_view(), name='dev_util'),
     path('add_students/', ReadStudentExcel.as_view(), name='dev_student'),
     path('all_student/', GetAllStudent.as_view(), name='dev_get_student'),
+    path('all_checkin/<int:classroom_id>/', AttendanceReportView.as_view(), name='dev_get_checkin'),
 
     # Account - Đăng nhập, đăng xuất, đổi mật khẩu
     path('login/', LoginView.as_view(), name='login'),

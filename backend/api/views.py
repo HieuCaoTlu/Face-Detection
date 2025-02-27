@@ -8,6 +8,7 @@ from django.core.files.base import ContentFile
 from datetime import datetime
 import json
 import os
+from django.utils.dateparse import parse_datetime
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 
@@ -308,13 +309,20 @@ class ClassroomView(RequiredLoginView):
     def post(self, request):
         data = json.loads(request.body)
         name = data.get("name")
+        start_date_str = data.get("start_date")
         class_sessions = data.get("sessions", [])
         student_ids = data.get("student_ids", [])
         teacher_id = data.get("teacher_id", 0)
+        weeks = int(data.get("weeks", 0))
+        start_date = None
+        if start_date_str:
+            vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+            start_date = datetime.strptime(start_date_str, "%d-%m-%Y") 
+            start_date = vn_tz.localize(start_date)
         if len(class_sessions) > 10 or teacher_id == 0:
             return JsonResponse({"error": "Cannot create more than 10 sessions"}, status=400)
         teacher = Teacher.objects.filter(id=teacher_id).first()
-        classroom = Classroom.objects.create(name=name, teacher=teacher)
+        classroom = Classroom.objects.create(name=name, teacher=teacher, start_date=start_date, weeks=weeks)
         session_objects = []
         for class_session in class_sessions:
             day_of_week = class_session.get("day_of_week")
@@ -499,7 +507,6 @@ class GetAllStudent(RequiredLoginView):
         finally:
             default_storage.delete(file_path)
 
-
 class ReadStudentExcel(RequiredLoginView):
     @method_decorator(staff_required, name='dispatch')
     def get(self, request):
@@ -539,3 +546,54 @@ class ReadStudentExcel(RequiredLoginView):
     def delete(self, request):
         Student.objects.all().delete()
         return JsonResponse({'message': f'Đã xóa mọi sinh viên!'})
+
+from datetime import timedelta
+import cloudinary
+import cloudinary.uploader
+from cloudinary.utils import cloudinary_url
+import pandas as pd
+
+class AttendanceReportView(View):
+    def get(self, request, classroom_id):
+        classroom = Classroom.objects.get(id=classroom_id)
+        class_sessions = ClassSession.objects.filter(classroom=classroom)
+        students = classroom.students.all()
+        
+        start_date = classroom.start_date
+        num_weeks = classroom.weeks
+        student_data = []
+        expected_sessions = len(class_sessions) * num_weeks
+        for student in students:
+            student_attendance = {
+                'id': student.id,
+                'username': student.username,
+                'name': student.name,
+            }
+            total_attendance = 0
+            for week in range(1, num_weeks + 1):
+                week_start = start_date + timedelta(weeks=week - 1)
+                week_end = week_start + timedelta(days=6)
+                attended_sessions = FaceAuthLog.objects.filter(
+                    student=student,
+                    class_session__classroom=classroom,
+                    created_at__date__range=[week_start, week_end],
+                    is_valid=True
+                ).count()
+                
+                student_attendance[f'Week {week}'] = attended_sessions
+                total_attendance += attended_sessions
+            
+            student_attendance['Total Attendance'] = total_attendance
+            student_attendance['Expected'] = expected_sessions
+            student_attendance['Complete'] = total_attendance >= expected_sessions
+            student_data.append(student_attendance)
+        
+        df = pd.DataFrame(student_data)
+        output_file = f'attendance_report_{classroom_id}.xlsx'
+        with default_storage.open(output_file, 'wb') as f:
+            df.to_excel(f, index=False)
+        
+        with default_storage.open(output_file, 'rb') as f:
+            upload_result = cloudinary.uploader.upload(f, resource_type="raw")
+        
+        return JsonResponse({"url": upload_result["secure_url"]})

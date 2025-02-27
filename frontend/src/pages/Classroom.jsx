@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Typography, Button, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Breadcrumbs, Link, useMediaQuery, TextField } from "@mui/material";
-import { getClassroomScore, getTeacherClassrooms } from "../api/classroom";
+import { getClassroomScore, getTeacherClassrooms, getClassroomCheckin } from "../api/classroom";
 import EditIcon from '@mui/icons-material/Edit';
 import DoDisturbIcon from '@mui/icons-material/DoDisturb';
 import { updateScores } from "../api/score";
@@ -24,6 +24,7 @@ export default function Classroom() {
   const [scores, setScores] = useState([]);
   const [breadcrumbs, setBreadcrumbs] = useState(["Lớp học"]);
   const [editingScores, setEditingScores] = useState(false);
+  const [loadingClass, setLoadingClass] = useState(null);
   const isDesktopScreen = useMediaQuery("(min-width:600px)");
 
   useEffect(() => {
@@ -54,6 +55,19 @@ export default function Classroom() {
       setBreadcrumbs(["Lớp học", classroom.name, "Bảng điểm"]);
     } catch (error) {
       console.log("Lỗi khi tìm bảng điểm của lớp học", error);
+    }
+  };
+
+  const handleShowCheckin = async (classroom) => {
+    try {
+      setLoadingClass(classroom.id); // Đánh dấu lớp đang tải
+      const response = await getClassroomCheckin(classroom.id);
+      const url = response.data.url;
+      window.location.href = url;
+    } catch (error) {
+      console.log("Lỗi khi tìm điểm danh của lớp học", error);
+    } finally {
+      setLoadingClass(null); // Reset loading khi hoàn tất
     }
   };
 
@@ -210,21 +224,22 @@ export default function Classroom() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>#</TableCell>
+                <TableCell>ID</TableCell>
                 <TableCell>Tên lớp</TableCell>
                 {isDesktopScreen ? <TableCell>Ngày bắt đầu</TableCell> : null}
                 {isDesktopScreen ? <TableCell>Ngày kết thúc</TableCell> : null}
                 <TableCell>Ca học</TableCell>
-                <TableCell>Bảng điểm</TableCell>
+                <TableCell>Bảng điểm & Sinh viên</TableCell>
+                <TableCell>Thống kê điểm danh</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {classrooms.map((classroom, index) => (
+              {classrooms.map((classroom) => (
                 <TableRow key={classroom.id}>
-                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{classroom.id}</TableCell>
                   <TableCell>{classroom.name}</TableCell>
-                  {isDesktopScreen ? <TableCell>{classroom.start_time}</TableCell> : null}
-                  {isDesktopScreen ? <TableCell>{classroom.end_time}</TableCell> : null}
+                  {isDesktopScreen ? <TableCell>{classroom.start_date}</TableCell> : null}
+                  {isDesktopScreen ? <TableCell>{classroom.weeks}</TableCell> : null}
                   <TableCell>
                     <Button variant="contained" onClick={() => handleShowSessions(classroom)}>
                       {isDesktopScreen ? 'Xem ca học' : 'Xem'}
@@ -232,7 +247,17 @@ export default function Classroom() {
                   </TableCell>
                   <TableCell>
                     <Button variant="contained" color="secondary" onClick={() => handleShowScores(classroom)}>
-                      {isDesktopScreen ? 'Xem bảng điểm' : 'Xem'}
+                      {isDesktopScreen ? 'Xem danh sách' : 'Xem'}
+                    </Button>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="contained"
+                      color="info"
+                      onClick={() => handleShowCheckin(classroom)}
+                      disabled={loadingClass === classroom.id} // Chỉ disable nút của lớp đang tải
+                    >
+                      {loadingClass === classroom.id ? "Đang tải..." : isDesktopScreen ? "Xem thống kê" : "Xem"}
                     </Button>
                   </TableCell>
                 </TableRow>

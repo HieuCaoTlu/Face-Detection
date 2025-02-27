@@ -65,6 +65,7 @@ export default function AdminClass() {
                 studentCount: cls.students.length,
                 sessionCount: cls.class_sessions.length,
                 students: cls.students,
+                weeks: cls.weeks
             }));
             setClasses(formattedClasses);
         }
@@ -172,7 +173,7 @@ export default function AdminClass() {
                             />
                         </Box>
                     </Box>
-                    <TableContainer component={Paper}>
+                    <TableContainer component={Paper} sx={{marginBlock: 2}}>
                         <Table>
                             <TableHead>
                                 <TableRow>
@@ -181,6 +182,7 @@ export default function AdminClass() {
                                     <TableCell>Giáo viên</TableCell>
                                     <TableCell>Số sinh viên</TableCell>
                                     <TableCell>Số buổi học</TableCell>
+                                    <TableCell>Số tuần học</TableCell>
                                     <TableCell>Thao tác</TableCell>
                                 </TableRow>
                             </TableHead>
@@ -194,6 +196,7 @@ export default function AdminClass() {
                                             <TableCell>{classroom.teacher}</TableCell>
                                             <TableCell>{classroom.studentCount}</TableCell>
                                             <TableCell>{classroom.sessionCount}</TableCell>
+                                            <TableCell>{classroom.weeks}</TableCell>
                                             <TableCell>
                                                 <Button variant="contained" onClick={() => handleShowStudents(classroom)}>
                                                     Xem danh sách
