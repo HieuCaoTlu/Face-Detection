@@ -134,20 +134,34 @@ export default function CameraComponent({ id, onSuccess }) {
         // Tạo file JPG
         fetch(best.image)
             .then(res => res.blob())
-            .then(blob => {
+            .then(async (blob) => {
                 const file = new File([blob], "best_face.jpg", { type: "image/jpeg" });
 
-                // Tạo form-data
-                faceAuth(file, id)
+                try {
+                    const response = await faceAuth(file, id); // Gửi ảnh để xác thực
 
-                // Simulate upload (thay bằng API thực tế)
-                const imageUrl = URL.createObjectURL(file);
-                console.log("🖼️ Link ảnh đã tạo:", imageUrl);
-
-                // Hiển thị thông báo thành công
-                setShouldShowSnackbar(true);
-                setIsProcessing(false);
+                    if (response === true) {
+                        console.log("✅ Xác thực thành công!");
+                        setShouldShowSnackbar(true);
+                    } else {
+                        console.warn("❌ Xác thực thất bại! Đang mở lại camera...");
+                        resetAndRestartCamera();
+                    }
+                } catch (error) {
+                    console.error("❌ Lỗi trong quá trình xác thực:", error);
+                    resetAndRestartCamera();
+                } finally {
+                    setIsProcessing(false);
+                }
             });
+    };
+
+    // Hàm reset trạng thái và mở lại camera
+    const resetAndRestartCamera = () => {
+        setCapturedImages([]);
+        setBestImage(null);
+        setIsProcessing(false);
+        startCamera();
     };
 
     return (
