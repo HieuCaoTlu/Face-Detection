@@ -10,7 +10,7 @@ export default function Admin() {
             <Typography variant="h2" gutterBottom sx={{ fontWeight: "bold", marginTop: { xs: 3, md: 5 } }}>
                 Quản trị
             </Typography>
-            <Box sx={{ marginTop: 2, border: "1px solid #ddd", padding: 3, borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Box sx={{ marginTop: 2, padding: 3, borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <Box>
                     <Typography variant="h5" fontWeight="bold">
                         Quản lí sinh viên
@@ -21,7 +21,7 @@ export default function Admin() {
                 </Box>
                 <Button variant="contained" component="span" onClick={() => navigate("/admin_student")}>Truy cập</Button>
             </Box>
-            <Box sx={{ marginTop: 2, border: "1px solid #ddd", padding: 3, borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Box sx={{ marginTop: 2, padding: 3, borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <Box>
                     <Typography variant="h5" fontWeight="bold">
                         Quản lí giáo viên
@@ -32,7 +32,7 @@ export default function Admin() {
                 </Box>
                 <Button variant="contained" component="span" onClick={() => navigate("/admin_teacher")}>Truy cập</Button>
             </Box>
-            <Box sx={{ marginTop: 2, border: "1px solid #ddd", padding: 3, borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Box sx={{ marginTop: 2, padding: 3, borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <Box>
                     <Typography variant="h5" fontWeight="bold">
                         Quản lí lớp học

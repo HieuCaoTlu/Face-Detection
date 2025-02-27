@@ -40,8 +40,8 @@ export default function TrainCamera({ onSuccess }) {
     useEffect(() => {
         if (shouldShowSnackbar) {
             setTimeout(() => {
-                setShouldShowSnackbar(false);  
-            }, 2000);  
+                setShouldShowSnackbar(false);
+            }, 2000);
         }
     }, [shouldShowSnackbar, showSnackbar]);
 
@@ -124,29 +124,37 @@ export default function TrainCamera({ onSuccess }) {
         setStream(null);
         setIsProcessing(true);
 
-        // Chọn ảnh có xác suất cao nhất
-        // Chuyển đổi tất cả ảnh thành file JPG và in ra URL blob của từng ảnh
+        if (images.length === 0) {
+            console.warn("❌ Không có ảnh hợp lệ, không thể huấn luyện.");
+            setIsProcessing(false);
+            return; // Không gọi onSuccess nếu không có ảnh
+        }
+
         const convertedImages = images.map(async (img) => {
             const response = await fetch(img.image);
             const blob = await response.blob();
             const file = new File([blob], `${img.id || 'image'}.jpg`, { type: "image/jpeg" });
 
-            // Tạo URL blob
-            const imageUrl = URL.createObjectURL(file);
-            console.log(`🖼️ Link ảnh đã tạo (${img.id || 'image'}):`, imageUrl);
-
+            console.log(`🖼️ Link ảnh đã tạo (${img.id || 'image'}):`, URL.createObjectURL(file));
             return file;
         });
 
         Promise.all(convertedImages).then(async (files) => {
+            if (files.length === 0) {
+                console.warn("❌ Không có ảnh nào hợp lệ để gửi đi.");
+                setIsProcessing(false);
+                return; // Không gọi onSuccess nếu không có ảnh hợp lệ
+            }
+
             console.log("✅ Tất cả ảnh đã được chuyển đổi:", files);
             await applyFaceAuth(files);
             setShouldShowSnackbar(true);
             setIsProcessing(false);
-        });
 
-        onSuccess()
+            onSuccess();
+        });
     };
+
 
     return (
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>

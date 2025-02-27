@@ -35,6 +35,11 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const updateUser = (newUser) => {
+        setUser(newUser);
+        sessionStorage.setItem("user", JSON.stringify(newUser));
+      };
+
     const handleLogout = async () => {
         try {
             await logout();
@@ -47,7 +52,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, setUser, handleLogin, handleLogout }}>
+        <AuthContext.Provider value={{ user, setUser: updateUser, handleLogin, handleLogout }}>
             {children}
         </AuthContext.Provider>
     );

@@ -42,6 +42,56 @@ export default function App() {
         palette: {
           mode,
         },
+        components: {
+          MuiButton: {
+            styleOverrides: {
+              root: ({ ownerState }) => ({
+                borderRadius: '12px',
+                boxShadow: ownerState.color === 'secondary'
+                  ? '0px 4px 10px rgba(123, 31, 162, 0.3)'  // Bóng tím nhạt khi secondary
+                  : '0px 4px 10px rgba(0, 123, 255, 0.3)',  // Bóng xanh mặc định (primary)
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  boxShadow: ownerState.color === 'secondary'
+                    ? '0px 6px 15px rgba(123, 31, 162, 0.5)'  // Bóng tím đậm hơn khi hover (secondary)
+                    : '0px 6px 15px rgba(0, 123, 255, 0.5)',  // Bóng xanh mạnh hơn khi hover (primary)
+                },
+              }),
+            }
+          },
+          MuiTextField: {
+            styleOverrides: {
+              root: ({ theme }) => ({
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '12px',
+                  backgroundColor: theme.palette.mode === 'dark'
+                    ? '#000'
+                    : '#fff',
+                  '& fieldset': {
+                    border: 'none',
+                  },
+                }
+              }),
+            }
+          },
+          MuiTableContainer: {
+            styleOverrides: {
+              root: {
+                borderRadius: '12px', // Làm bo góc bảng
+                boxShadow: 'none', // Xóa shadow
+              },
+            },
+          },
+          MuiPaper: {
+            styleOverrides: {
+              root: {
+                borderRadius: '12px', // Nếu bảng nằm trong Paper, bo góc luôn
+                boxShadow: 'none', // Xóa shadow mặc định của Paper
+              },
+            },
+          },
+
+        }
       }),
     [mode]
   );

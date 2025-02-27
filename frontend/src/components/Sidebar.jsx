@@ -5,8 +5,8 @@ import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import { useState, useContext } from "react";
 import SwipeableDrawer from "@mui/material/SwipeableDrawer";
-import { ColorModeContext } from "../App"; // Import context đổi theme
-import { AuthContext } from "../context/auth_context/AuthContext"; // Import context Auth
+import { ColorModeContext } from "../App";
+import { AuthContext } from "../context/auth_context/AuthContext";
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { useAuth } from "../context/auth_context/useAuth";
 import SchoolIcon from '@mui/icons-material/School';
@@ -16,8 +16,8 @@ const Sidebar = () => {
     const location = useLocation();
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
     const [open, setOpen] = useState(false);
-    const colorMode = useContext(ColorModeContext); // Lấy function đổi theme
-    const { handleLogout } = useContext(AuthContext); // Lấy function logout từ AuthProvider
+    const colorMode = useContext(ColorModeContext);
+    const { handleLogout } = useContext(AuthContext);
     const { user } = useAuth();
 
     const toggleDrawer = (state) => () => {
@@ -30,55 +30,71 @@ const Sidebar = () => {
         { text: "Thời khóa biểu", icon: <CalendarMonthIcon />, path: "/timetable" },
     ];
     if (user?.role === "student") {
-        menuItems.push(
-            { text: "Bảng điểm", icon: <TableChartIcon />, path: "/score" },
-        );
+        menuItems.push({ text: "Bảng điểm", icon: <TableChartIcon />, path: "/score" });
     }
-
     if (user?.role === "teacher") {
         menuItems.push({ text: "Quản lý lớp học", icon: <SchoolIcon />, path: "/classroom" });
     }
-
     if (user?.role === "admin") {
         menuItems.push({ text: "Quản trị", icon: <Home />, path: "/head" });
     }
 
     const drawerContent = (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-            <List sx={{ flexGrow: 1 }}>
-                {menuItems.map((item) => (
-                    <ListItem
-                        component={Link}
-                        to={item.path}
-                        key={item.text}
-                        onClick={toggleDrawer(false)}
-                        sx={{
-                            cursor: "pointer",
-                            backgroundColor: location.pathname === item.path ? theme.palette.action.selected : "transparent",
-                            "&:hover": {
-                                backgroundColor: theme.palette.action.hover,
-                            },
-                        }}
-                    >
-                        <ListItemIcon sx={{ color: theme.palette.text.primary }}>{item.icon}</ListItemIcon>
-                        <ListItemText
-                            primary={item.text}
+            {/* LOGO */}
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: 3 }}>
+                <img src="/icons/logo.png" alt="Logo" style={{ height: 70 }} />
+            </Box>
+
+            <List sx={{ flexGrow: 1, px: 2 }}>
+                {menuItems.map((item) => {
+                    const isSelected = location.pathname === item.path;
+                    return (
+                        <ListItem
+                            component={Link}
+                            to={item.path}
+                            key={item.text}
+                            onClick={toggleDrawer(false)}
                             sx={{
-                                fontWeight: location.pathname === item.path ? "bold" : "normal",
-                                color: theme.palette.text.primary,
+                                cursor: "pointer",
+                                borderRadius: 2,
+                                width: "90%",
+                                mx: "auto",
+                                backgroundColor: isSelected ? "#007bff" : "transparent",
+                                boxShadow: isSelected ? '0px 4px 10px rgba(0, 123, 255, 0.3)' : "none",
+                                "&:hover": {
+                                    backgroundColor: isSelected ? "#007bff" : theme.palette.action.hover,
+                                },
                             }}
-                        />
-                    </ListItem>
-                ))}
+                        >
+                            <ListItemIcon
+                                sx={{
+                                    color: isSelected ? "white" : theme.palette.text.primary,
+                                }}
+                            >
+                                {item.icon}
+                            </ListItemIcon>
+                            <ListItemText
+                                primary={item.text}
+                                sx={{
+                                    color: isSelected ? "white" : theme.palette.text.primary,
+                                    fontWeight: isSelected ? "bold" : "normal",
+                                }}
+                            />
+                        </ListItem>
+                    );
+                })}
             </List>
 
             {/* Khu vực nút đổi theme + đăng xuất */}
-            <Box sx={{ position: "absolute", bottom: 0, width: "100%" }}>
+            <Box sx={{ px: 2, pb: 2 }}>
                 {/* Nút đổi theme */}
                 <ListItem
                     onClick={colorMode.toggleColorMode}
                     sx={{
                         cursor: "pointer",
+                        borderRadius: 2,
+                        marginBottom: 2,
                         "&:hover": {
                             backgroundColor: theme.palette.action.hover,
                         },
@@ -95,10 +111,11 @@ const Sidebar = () => {
                     onClick={handleLogout}
                     sx={{
                         cursor: "pointer",
-                        backgroundColor: theme.palette.error.dark, // 🔴 Màu đỏ nhẹ luôn hiển thị
+                        borderRadius: 2,
+                        backgroundColor: theme.palette.error.dark,
                         color: theme.palette.error.contrastText,
                         "&:hover": {
-                            backgroundColor: theme.palette.error.main, // 🔴 Hover đậm hơn
+                            backgroundColor: theme.palette.error.main,
                             color: theme.palette.error.contrastText,
                         },
                     }}
@@ -109,7 +126,7 @@ const Sidebar = () => {
                     <ListItemText primary="Đăng xuất" />
                 </ListItem>
             </Box>
-        </Box>
+        </Box >
     );
 
     return (
@@ -138,7 +155,7 @@ const Sidebar = () => {
                     onOpen={toggleDrawer(true)}
                     sx={{
                         "& .MuiDrawer-paper": {
-                            width: 240,
+                            width: 260, // Sidebar rộng hơn
                             backgroundColor: theme.palette.background.default,
                             color: theme.palette.text.primary,
                         },
@@ -151,10 +168,10 @@ const Sidebar = () => {
                     variant="permanent"
                     anchor="left"
                     sx={{
-                        width: 240,
+                        width: 260, // Sidebar rộng hơn
                         flexShrink: 0,
                         [`& .MuiDrawer-paper`]: {
-                            width: 240,
+                            width: 260,
                             boxSizing: "border-box",
                             backgroundColor: theme.palette.background.default,
                             color: theme.palette.text.primary,

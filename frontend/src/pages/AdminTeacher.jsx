@@ -67,12 +67,14 @@ export default function AdminTeacher() {
             <Typography variant="h2" gutterBottom sx={{ fontWeight: "bold", marginTop: { xs: 3, md: 5 } }}>
                 Danh sách giáo viên
             </Typography>
-            <Box display="flex" gap={2} mb={2} justifyContent="center" alignItems="center">
+            <Box display="flex" gap={2} mb={2} justifyContent="start" alignItems="center" flexWrap="wrap">
                 <Button
                     variant="contained"
                     component="label"
                     startIcon={<CloudUploadIcon />}
-                    sx={{ flex: 1, height: 55 }}
+                    sx={{
+                        height: 55,
+                    }}
                 >
                     Nhập danh sách giáo viên từ Excel
                     <input type="file" accept=".xlsx" style={{ display: "none" }} onChange={handleUpload} />
@@ -80,7 +82,7 @@ export default function AdminTeacher() {
                 <Button
                     variant="outlined"
                     color="secondary"
-                    sx={{ flex: 1, height: 55 }}
+                    sx={{ height: 55 }}
                     href="https://docs.google.com/spreadsheets/d/1HfBwt_eB7i9sl1XfYZRzNQ4V7BIy6BEY/edit?usp=sharing&ouid=116080108977609860433&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer"
                 >
                     Lấy Excel nhập thông tin mẫu
@@ -88,7 +90,7 @@ export default function AdminTeacher() {
                 <TextField
                     label="Tìm kiếm giáo viên"
                     variant="outlined"
-                    sx={{ width: '50%' }}
+                    sx={{ flex: 1, width: '100%' }}
                     value={searchTerm}
                     onChange={handleSearchChange}
                 />

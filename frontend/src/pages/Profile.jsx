@@ -7,17 +7,23 @@ import TrainCamera from "../components/TrainCamera";
 import ChangePassword from "./Password";
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const theme = useTheme();
   const { showSnackbar } = useSnackbar();
   const [openDialog, setOpenDialog] = useState(false);
 
-  const handleCloseDialog = async () => {
+  const handleDialogClose = () => {
     setOpenDialog(false);
-    showSnackbar("Cài đặt xác thực thành công!", "success");
-    user.face_auth = true
-
   };
+
+  const handleSuccess = () => {
+    setOpenDialog(false);
+    const updatedUser = { ...user, face_auth: true };
+    sessionStorage.setItem("user", JSON.stringify(updatedUser));
+    setUser(updatedUser);
+    showSnackbar("Cài đặt xác thực thành công!", "success");
+  };
+
 
   return (
     <>
@@ -40,7 +46,7 @@ export default function Profile() {
       <Grid container spacing={2}>
         {/* Thông tin xác thực khuôn mặt */}
         <Grid item xs={12} md={6}>
-          <Box sx={{ border: "1px solid #ddd", padding: 2, borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Box sx={{ padding: 2, borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <Box sx={{ display: "flex", alignItems: "flex-start", padding: 1 }}>
               <Avatar sx={{ width: 60, height: 60, marginRight: 2 }} src={user?.avatar} />
               <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 1 }}>
@@ -59,7 +65,7 @@ export default function Profile() {
 
         {/* Box thông tin cá nhân */}
         <Grid item xs={12} md={6}>
-          <Box sx={{ border: "1px solid #ddd", padding: 2, borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff" }}>
+          <Box sx={{ padding: 2, borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff" }}>
             <Typography variant="h6">Mã người dùng: {user?.id || "Chưa cập nhật"}</Typography>
             <Typography variant="body1">Ngày sinh: {user?.dob || "Chưa cập nhật"}</Typography>
             <Typography variant="body1">Số điện thoại: {user?.phone_number || "Chưa cập nhật"}</Typography>
@@ -68,22 +74,23 @@ export default function Profile() {
 
         {/* Box đổi mật khẩu */}
         <Grid item xs={12} md={6}>
-          <Box sx={{ border: "1px solid #ddd", padding: 2, borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff" }}>
+          <Box sx={{ padding: 2, borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff" }}>
             <Typography variant="h6">Đổi mật khẩu</Typography>
             <ChangePassword />
           </Box>
         </Grid>
       </Grid >
 
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
+      <Dialog open={openDialog} onClose={handleDialogClose}>
         <DialogTitle>Xác thực khuôn mặt</DialogTitle>
         <DialogContent>
-          <TrainCamera onSuccess={handleCloseDialog} />
+          <TrainCamera onSuccess={handleSuccess} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary">Đóng</Button>
+          <Button onClick={handleDialogClose} color="primary">Đóng</Button>
         </DialogActions>
       </Dialog>
+
     </>
   );
 }

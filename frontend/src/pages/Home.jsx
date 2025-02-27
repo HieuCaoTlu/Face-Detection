@@ -27,7 +27,7 @@ export default function Home() {
                 name: session.classroom,
                 startTime: session.start_time,
                 endTime: session.end_time,
-                checkin: session.checkin,
+                checkin: session.checkin,   
             })));
         } catch (err) {
             console.error("[API Error]:", err);
@@ -87,8 +87,8 @@ export default function Home() {
             <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
                     <Box sx={{
-                        border: "1px solid #ddd", padding: 2, borderRadius: 2,
-                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)",
+                        padding: 2, borderRadius: 2,
+                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
                         backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff",
                     }}>
                         <Typography variant="h7" gutterBottom>
@@ -99,8 +99,8 @@ export default function Home() {
                 </Grid>
                 <Grid item xs={12} md={6}>
                     <Box sx={{
-                        border: "1px solid #ddd", padding: 2, borderRadius: 2,
-                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)",
+                        padding: 2, borderRadius: 2,
+                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
                         backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff",
                     }}>
                         <Typography variant="h7" gutterBottom>
@@ -113,7 +113,7 @@ export default function Home() {
                 </Grid>
                 <Grid item xs={12}>
                     <TableContainer sx={{
-                        border: "1px solid #ddd", borderRadius: 2,
+                        borderRadius: 2,
                         backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff",
                         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
                         position: "relative"
