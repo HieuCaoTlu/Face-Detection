@@ -65,13 +65,30 @@ def preprocess_image(img):
     img = ((img.astype(np.float32) / 255.0) - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
     return np.expand_dims(np.transpose(img, (2, 0, 1)), axis=0).astype(np.float32)
 
+# def predict(image):
+#     face_input = preprocess_image(image)
+#     outputs = session.run(None, {session.get_inputs()[0].name: face_input})
+#     prediction = face_classifier.predict(outputs[0])
+#     print(face_classifier.predict_proba(outputs[0]))
+#     print(face_classifier.classes_)
+#     print("Dự đoán:", prediction[0])
+#     return prediction[0]
+
+import numpy as np
+
 def predict(image):
     face_input = preprocess_image(image)
     outputs = session.run(None, {session.get_inputs()[0].name: face_input})
-    prediction = face_classifier.predict(outputs[0])
-    print(face_classifier.classes_)
-    print("Dự đoán:", prediction[0])
-    return prediction[0]
+
+    probabilities = face_classifier.predict_proba(outputs[0]) 
+    predicted_index = int(np.argmax(probabilities)) 
+    max_prob = float(np.max(probabilities)) 
+    predicted_label = face_classifier.classes_[predicted_index] 
+    print("Xác suất từng lớp:", probabilities)
+    print("Danh sách lớp:", face_classifier.classes_)
+    print(f"Dự đoán: {predicted_label}, Xác suất: {max_prob:.4f}", max_prob >= 0.4)
+    return predicted_label if max_prob >= 0.4 else False
+
 
 def train(images_path, label):
     global face_classifier
@@ -99,7 +116,7 @@ def train(images_path, label):
         embeddings.append(dummy_embedding)
         labels.append("unknown")
 
-    face_classifier = SVC()
+    face_classifier = SVC(kernel='linear', probability=True)
     face_classifier.fit(embeddings, labels)
     joblib.dump(face_classifier, os.path.join(model_dir, 'face_classifier.pkl'))
     print("Các lớp trong mô hình mới:", face_classifier.classes_)

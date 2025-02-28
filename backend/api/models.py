@@ -200,6 +200,7 @@ class ClassSession(BaseModel):
 class FaceAuthLog(BaseModel):
     image_data = models.BinaryField(blank=True, null=True)
     is_valid = models.BooleanField(default=False)
+    comment = models.CharField(default='',null=True,blank=True,max_length=10)
     class_session = models.ForeignKey(ClassSession, on_delete=models.SET_NULL, related_name='attendance_logs', null=True, blank=True)  # Không mất dữ liệu
     student = models.ForeignKey(Student, on_delete=models.SET_NULL, related_name='facial_auth_logs', null=True, blank=True)  # Không mất dữ liệu
 

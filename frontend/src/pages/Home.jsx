@@ -27,7 +27,8 @@ export default function Home() {
                 name: session.classroom,
                 startTime: session.start_time,
                 endTime: session.end_time,
-                checkin: session.checkin,   
+                checkin: session.checkin,
+                ready: session.ready,
             })));
         } catch (err) {
             console.error("[API Error]:", err);
@@ -51,7 +52,7 @@ export default function Home() {
             setSelectedClassroom(classroom);
             setOpenDialog(true);
         }
-        else showSnackbar("Bạn chưa cài đặt xác thực","error")
+        else showSnackbar("Bạn chưa cài đặt xác thực", "error")
     };
 
     const nextClassroom = classrooms.find(classroom => !classroom.checkin);
@@ -119,9 +120,14 @@ export default function Home() {
                         position: "relative"
                     }}>
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 2 }}>
-                            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                                Danh sách các lớp học
-                            </Typography>
+                            <Box>
+                                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                                    Danh sách các lớp hôm nay
+                                </Typography>
+                                <Typography variant="body2" color="error">
+                                    *Lưu ý: Trễ 15 phút sẽ bị tính là điểm danh muộn.
+                                </Typography>
+                            </Box>
                             <IconButton onClick={handleReload}>
                                 <RefreshIcon />
                             </IconButton>
@@ -142,14 +148,22 @@ export default function Home() {
                                         <TableCell sx={{ fontSize: "16px" }}>{classroom.startTime}</TableCell>
                                         <TableCell sx={{ fontSize: "16px" }}>{classroom.endTime}</TableCell>
                                         <TableCell>
-                                            <Button
+                                            {classroom.ready ? (
+                                                <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    onClick={() => handleCheckin(classroom)}
+                                                    disabled={classroom.checkin}
+                                                >
+                                                    {classroom.checkin ? "Đã điểm danh" : "Điểm danh"}
+                                                </Button>
+                                            ) : <Button
                                                 variant="contained"
                                                 color="primary"
-                                                onClick={() => handleCheckin(classroom)}
-                                                disabled={classroom.checkin}
+                                                disabled
                                             >
-                                                {classroom.checkin ? "Đã điểm danh" : "Điểm danh"}
-                                            </Button>
+                                                Chưa tới giờ học
+                                            </Button>}
                                         </TableCell>
                                     </TableRow>
                                 ))}

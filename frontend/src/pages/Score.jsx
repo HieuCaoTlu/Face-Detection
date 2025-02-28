@@ -60,7 +60,6 @@ export default function Score() {
             onChange={(e) => setFilterClassroom(e.target.value)}
             sx={{
               borderRadius: 2,
-              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.08)",
               backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff",
             }}
           >
@@ -77,7 +76,7 @@ export default function Score() {
         </Grid>
       </Grid>
 
-      <TableContainer sx={{ marginTop: 3, border: "1px solid #ddd", borderRadius: 2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)", backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff", }}>
+      <TableContainer sx={{ marginTop: 3,  borderRadius: 2, backgroundColor: theme.palette.mode === "dark" ? "#333" : "#fff", }}>
         <Table>
           <TableHead>
             <TableRow>

@@ -19,6 +19,7 @@ import AdminClass from "./pages/AdminClass";
 import ClassroomManager from "./pages/MakeClassroom";
 import AdminStudent from "./pages/AdminStudent";
 import AdminTeacher from "./pages/AdminTeacher";
+import Checkin from "./pages/Checkin";
 
 export const ColorModeContext = createContext({ toggleColorMode: () => { } });
 
@@ -110,6 +111,7 @@ export default function App() {
                 <Route path='/score' element={<Layout> <Score /> </Layout>} />
                 <Route path='/train' element={<Layout> <TrainCamera /> </Layout>} />
                 <Route path='/timetable' element={<Layout> <Schedule /> </Layout>} />
+                <Route path='/checkin' element={<Layout> <Checkin /> </Layout>} />
                 <Route path='/classroom' element={<Layout> <Classroom /> </Layout>} />
                 <Route path='/head' element={<Layout> <Admin /> </Layout>} />
                 <Route path='/admin_class' element={<Layout> <AdminClass /> </Layout>} />

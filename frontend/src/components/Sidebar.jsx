@@ -10,7 +10,7 @@ import { AuthContext } from "../context/auth_context/AuthContext";
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { useAuth } from "../context/auth_context/useAuth";
 import SchoolIcon from '@mui/icons-material/School';
-
+import PermContactCalendarIcon from '@mui/icons-material/PermContactCalendar';
 const Sidebar = () => {
     const theme = useTheme();
     const location = useLocation();
@@ -28,6 +28,7 @@ const Sidebar = () => {
         { text: "Trang chủ", icon: <Home />, path: "/" },
         { text: "Cá nhân", icon: <Person />, path: "/profile" },
         { text: "Thời khóa biểu", icon: <CalendarMonthIcon />, path: "/timetable" },
+        { text: "Lịch sử checkin", icon: <PermContactCalendarIcon />, path: "/checkin" },
     ];
     if (user?.role === "student") {
         menuItems.push({ text: "Bảng điểm", icon: <TableChartIcon />, path: "/score" });
@@ -40,7 +41,7 @@ const Sidebar = () => {
     }
 
     const drawerContent = (
-        <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        <Box sx={{ display: "flex", flexDirection: "column", height: "100%"}}>
             {/* LOGO */}
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: 3 }}>
                 <img src="/icons/logo.png" alt="Logo" style={{ height: 70 }} />
@@ -175,6 +176,10 @@ const Sidebar = () => {
                             boxSizing: "border-box",
                             backgroundColor: theme.palette.background.default,
                             color: theme.palette.text.primary,
+                            border: 'none',
+                            boxShadow: theme.palette.mode === 'dark'
+                                ? "0 4px 10px rgba(0, 0, 0, 0.6)"  // Bóng tối hơn khi theme dark
+                                : '0px 4px 10px rgba(203, 228, 255, 0.3)',
                         },
                     }}
                 >

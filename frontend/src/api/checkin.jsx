@@ -19,3 +19,8 @@ export const applyFaceAuth = async (files) => {
     console.log("✅ Kết quả huấn luyện:", response.data);
     return response;
 }
+
+export const getFaceAuth = async () => {
+    const response = await request("GET", "/face_auth/")
+    return response.data.logs
+}

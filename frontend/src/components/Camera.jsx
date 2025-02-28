@@ -15,6 +15,8 @@ export default function CameraComponent({ id, onSuccess }) {
     const [bestImage, setBestImage] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [shouldShowSnackbar, setShouldShowSnackbar] = useState(false);
+    const intervalRef = useRef(null); // Lưu ID của interval
+
 
     useEffect(() => {
         const loadModels = async () => {
@@ -99,7 +101,7 @@ export default function CameraComponent({ id, onSuccess }) {
         const displaySize = { width: video.videoWidth, height: video.videoHeight };
         faceapi.matchDimensions(canvas, displaySize);
 
-        const interval = setInterval(async () => {
+        intervalRef.current = setInterval(async () => {
             const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }));
 
             const resizedDetections = faceapi.resizeResults(detections, displaySize);
@@ -114,10 +116,11 @@ export default function CameraComponent({ id, onSuccess }) {
             });
 
             if (capturedImages.length >= 5) {
-                clearInterval(interval);
+                clearInterval(intervalRef.current); // Dừng interval sau khi chụp đủ ảnh
             }
         }, 200);
     };
+
 
     const stopCamera = (images) => {
         if (stream) {
@@ -126,43 +129,50 @@ export default function CameraComponent({ id, onSuccess }) {
         setStream(null);
         setIsProcessing(true);
 
-        // Chọn ảnh có xác suất cao nhất
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current); // Dừng phát hiện khuôn mặt
+        }
+
         const best = images.reduce((prev, curr) => (curr.prob > prev.prob ? curr : prev), images[0]);
         setBestImage(best.image);
         console.log("✅ Ảnh tốt nhất được chọn:", best);
 
-        // Tạo file JPG
         fetch(best.image)
             .then(res => res.blob())
             .then(async (blob) => {
                 const file = new File([blob], "best_face.jpg", { type: "image/jpeg" });
 
                 try {
-                    const response = await faceAuth(file, id); // Gửi ảnh để xác thực
-
+                    const response = await faceAuth(file, id);
                     if (response === true) {
                         console.log("✅ Xác thực thành công!");
                         setShouldShowSnackbar(true);
                     } else {
-                        console.warn("❌ Xác thực thất bại! Đang mở lại camera...");
-                        resetAndRestartCamera();
+                        console.warn("❌ Xác thực thất bại! Yêu cầu người dùng thử lại.");
+                        resetCameraState();
                     }
                 } catch (error) {
                     console.error("❌ Lỗi trong quá trình xác thực:", error);
-                    resetAndRestartCamera();
+                    resetCameraState();
                 } finally {
                     setIsProcessing(false);
                 }
             });
     };
 
-    // Hàm reset trạng thái và mở lại camera
-    const resetAndRestartCamera = () => {
+    const resetCameraState = () => {
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current); // Dừng phát hiện khuôn mặt
+        }
         setCapturedImages([]);
         setBestImage(null);
         setIsProcessing(false);
-        startCamera();
+        setStream(null);
+        showSnackbar("Xác thực thất bại! Hãy mở lại camera và thử lại.", "error");
     };
+
+
+
 
     return (
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>

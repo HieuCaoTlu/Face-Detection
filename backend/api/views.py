@@ -111,6 +111,7 @@ class StudentView(RequiredLoginView):
         try:
             student = Student.objects.get(id=student_id)
             student.name = data.get('name', student.name)
+            student.face_auth = data.get('face_auth', student.face_auth)
             student.save()
             return JsonResponse({'status': 'success', 'student': student.info()})
         except Student.DoesNotExist:
@@ -229,7 +230,27 @@ class LoginView(BaseView):
         else:
             return JsonResponse({'error': 'Invalid username or password'}, status=400)
 
+VN_TZ = pytz.timezone('Asia/Ho_Chi_Minh')
 class FaceAuthView(RequiredLoginView):
+    def get(self, request):
+        if not hasattr(request.user, 'student'):
+            return JsonResponse({'error': 'Invalid authentication'}, status=400)
+        
+        student = Student.objects.get(id=request.user.id)
+        face_auth_logs = FaceAuthLog.objects.filter(student=student).order_by('-created_at')
+
+        logs_data = []
+        for log in face_auth_logs:
+            logs_data.append({
+                'class_session': log.class_session.info(),
+                'classroom': log.class_session.classroom.name,
+                'is_valid': log.is_valid,
+                'created_at': localtime(log.created_at, VN_TZ).strftime('%d-%m-%Y %H:%M:%S'),
+                'comment': log.comment
+            })
+        
+        return JsonResponse({'logs': logs_data}, status=200)
+
     def post(self, request):
         if not request.FILES.get('image') or not hasattr(request.user, 'student'):
             return JsonResponse({'error': 'No image uploaded or invaild authentication'}, status=400)
@@ -249,11 +270,22 @@ class FaceAuthView(RequiredLoginView):
         checkin = False
         if class_session_id and is_valid:
             class_session = ClassSession.objects.get(id=class_session_id)
+            vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+            now = datetime.now(vn_tz).time()
+            start_time = class_session.start_time
+            now_total_minutes = now.hour * 60 + now.minute
+            start_total_minutes = start_time.hour * 60 + start_time.minute
+            if now_total_minutes > start_total_minutes + 15:
+                comment = 'Đi muộn'
+            else:
+                comment = 'Đúng giờ'
             student = Student.objects.get(id=request.user.id)
-            face_auth_log = FaceAuthLog(image_data=buffered.getvalue(),student=student, class_session=class_session, is_valid=is_valid)
+            face_auth_log = FaceAuthLog(image_data=buffered.getvalue(),student=student, class_session=class_session, is_valid=is_valid, comment=comment)
             face_auth_log.save()
             checkin = True
         return JsonResponse({'valid':is_valid, 'result':result, 'name':request.user.name, 'checkin':checkin,})
+            
+        return JsonResponse({'valid':is_valid, 'result':result, 'name':request.user.name, 'checkin':checkin, 'comment':comment})
 
 class LogoutView(RequiredLoginView):
     def post(self, request):
@@ -471,15 +503,24 @@ class ClassSessionView(RequiredLoginView):
         if day:
             today = datetime.today().isoweekday() + 1
             print(f"Hôm nay là: {dict(ClassSession.DAYS_OF_WEEK).get(today, 'Unknown')}")
-            class_sessions = ClassSession.objects.filter(day_of_week=today, classroom__in=classrooms)
+            class_sessions = ClassSession.objects.filter(day_of_week=today, classroom__in=classrooms).order_by('start_time')
         else:
-            class_sessions = ClassSession.objects.filter(classroom__in=classrooms)
+            class_sessions = ClassSession.objects.filter(classroom__in=classrooms).order_by('start_time')
         class_sessions_data = []
+        vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+        now = datetime.now(vn_tz).time()
+        now_total_minutes = now.hour * 60 + now.minute
         for class_session in class_sessions:
             face_auth = FaceAuthLog.objects.filter(student=student, class_session=class_session, created_at__date=today_date).first()
             checkin = True if face_auth else False
+            start_time = class_session.start_time
+            end_time = class_session.end_time
+            start_total_minutes = start_time.hour * 60 + start_time.minute
+            end_total_minutes = end_time.hour * 60 + end_time.minute
+            ready = start_total_minutes - 10 <= now_total_minutes <= end_total_minutes
             info = class_session.info()
             info['checkin'] = checkin
+            info['ready'] = ready
             class_sessions_data.append(info)
         return JsonResponse({'status': 'success', 'class_sessions': class_sessions_data})
 

@@ -1,7 +1,7 @@
 # Cấu Trúc Dự Án
 
 - **Backend**: Django API chạy trên port 8000
-- **Frontend**: React (Vite) ứng dụng chạy trên port 5000
+- **Frontend**: React (Vite) ứng dụng chạy trên port 5173
 - **Database**: PostgresSQL chạy trên port 5432
 
 # Trước khi khởi động Backend
@@ -30,14 +30,13 @@ CLOUDINARY_API_SECRET=abc
 ```bash
 docker compose up --build # xây dựng docker và cài đặt package tự động
 localhost:8000 # url backend
-localhost:5000 # url frontend
+localhost:5173 # url frontend
 localhost:5432 # url database
 ```
 
 # Tài khoản thử nghiệm (Admin, Sinh viên, Giáo viên)
 
-- admin | trunghieu7a1
-- stu | trunghieu8a1
+- admin | trunghieu8a1
 - tea | trunghieu7a1
 
 # Các API đã xây dựng
@@ -78,7 +77,5 @@ Domain: `localhost:8000/` (yêu cầu đăng nhập trước khi dùng)
 # Optional (Backup dữ liệu từ CSDL):
 
 ```bash
-docker exec -it postgres bash #truy cập bash của postgres
-pg_dump -U myuser -d mydatabase -F p -f /var/lib/postgresql/data/backup.sql #tạo backup
-docker cp postgres:/var/lib/postgresql/data/backup.sql ./backup_new.sql #Thoát khỏi bash và copy backup ra thư mục làm việc ngoài docker
+docker exec -i postgres pg_dump -U myuser -d mydatabase -F p > backup.sql
 ```
