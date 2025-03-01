@@ -227,7 +227,7 @@ export default function Classroom() {
                 <TableCell>ID</TableCell>
                 <TableCell>Tên lớp</TableCell>
                 {isDesktopScreen ? <TableCell>Ngày bắt đầu</TableCell> : null}
-                {isDesktopScreen ? <TableCell>Ngày kết thúc</TableCell> : null}
+                {isDesktopScreen ? <TableCell>Số tuần học</TableCell> : null}
                 <TableCell>Ca học</TableCell>
                 <TableCell>Bảng điểm & Sinh viên</TableCell>
                 <TableCell>Thống kê điểm danh</TableCell>
