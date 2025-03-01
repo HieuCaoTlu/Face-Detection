@@ -46,7 +46,6 @@ class RequiredLoginView(View):
 class ApplyFaceAuthView(RequiredLoginView):
     def post(self, request):
         user = CustomUser.objects.get(id=request.user.id)
-        label = user.name
         if not user:
             return JsonResponse({'error': 'Invaild user'}, status=400)
         if not user.name or not request.FILES.getlist('images'):
@@ -56,7 +55,7 @@ class ApplyFaceAuthView(RequiredLoginView):
         for image in images:
             images_path = default_storage.save(f"train/{image.name}", image)
             images_paths.append(images_path)
-        result = train(images_paths, label)
+        result = train(images_paths, user.username)
         user.face_auth = True
         user.save()
         if hasattr(user, 'teacher'):
@@ -264,7 +263,7 @@ class FaceAuthView(RequiredLoginView):
         image.save(buffered, format="JPEG")
         result = predict(image)
         student = Student.objects.get(id=request.user.id)
-        is_valid = True if result == student.name else False
+        is_valid = True if result == student.username else False
         class_session_id = request.POST.get('class_session_id', None)
         os.remove(os.path.join('checkin/', filename))
         checkin = False
@@ -355,6 +354,10 @@ class ClassroomView(RequiredLoginView):
             return JsonResponse({"error": "Cannot create more than 10 sessions"}, status=400)
         teacher = Teacher.objects.filter(id=teacher_id).first()
         classroom = Classroom.objects.create(name=name, teacher=teacher, start_date=start_date, weeks=weeks)
+        print("Ngay sau khi tạo:", classroom.start_date)  # In lần 1
+        classroom.refresh_from_db()  # Load lại từ DB
+        print("Sau khi load lại:", classroom.start_date)
+        print(classroom.start_date.day, classroom.start_date.month)  # In lần 2
         session_objects = []
         for class_session in class_sessions:
             day_of_week = class_session.get("day_of_week")
@@ -490,6 +493,26 @@ class UserView(RequiredLoginView):
             return JsonResponse({'error':'Người dùng không tồn tại'},status=400)
         return JsonResponse(user.info(), status=200)
 
+    def put(self, request, user_id):
+        data = json.loads(request.body)
+        try:
+            user = CustomUser.objects.get(id=user_id)
+            user.name = data.get('name', user.name)
+            user.face_auth = data.get('face_auth', user.face_auth)
+            dob_str = data.get('dob', user.dob)
+            if dob_str:
+                try:
+                    user.dob = datetime.strptime(dob_str, "%d/%m/%Y").date()
+                except ValueError:
+                    return JsonResponse({'error': 'Invalid date format. Use dd/mm/yyyy'}, status=400)
+            user.phone_number = data.get('phone_number', user.phone_number)
+            user.gender = data.get('gender', user.gender)
+            user.face_auth = data.get('face_auth', user.face_auth)
+            user.save()
+            return JsonResponse({'status': 'success', 'user': user.info()})
+        except CustomUser.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+
 class ClassSessionView(RequiredLoginView):
     @method_decorator(student_required, name='dispatch')
     def get(self, request):
@@ -601,9 +624,13 @@ class AttendanceReportView(View):
         students = classroom.students.all()
         
         start_date = classroom.start_date
+        print(start_date.day, start_date.month, 'Ban đầu')
         num_weeks = classroom.weeks
         student_data = []
         expected_sessions = len(class_sessions) * num_weeks
+        vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+        start_date = start_date.astimezone(vn_tz)
+        print("Start date (Vietnam Time):", start_date.day, start_date.month)
         for student in students:
             student_attendance = {
                 'id': student.id,
@@ -611,20 +638,30 @@ class AttendanceReportView(View):
                 'name': student.name,
             }
             total_attendance = 0
+            total_late = 0  # Thêm biến để đếm số ca đi muộn
             for week in range(1, num_weeks + 1):
                 week_start = start_date + timedelta(weeks=week - 1)
                 week_end = week_start + timedelta(days=6)
+                print(week_start.day, week_start.month,'week start')
+                # Kiểm tra ngày tháng tuần để đảm bảo lọc đúng                
                 attended_sessions = FaceAuthLog.objects.filter(
                     student=student,
                     class_session__classroom=classroom,
                     created_at__date__range=[week_start, week_end],
                     is_valid=True
-                ).count()
+                )
+                a = FaceAuthLog.objects.filter(student=student).first()
+                # Kiểm tra và in ra số buổi đi muộn
+                late_sessions = attended_sessions.filter(comment='Đi muộn')
+
+                student_attendance[f'Week {week}'] = attended_sessions.count()
+                student_attendance[f'Week {week} - Đi muộn'] = late_sessions.count()
                 
-                student_attendance[f'Week {week}'] = attended_sessions
-                total_attendance += attended_sessions
+                total_attendance += attended_sessions.count()
+                total_late += late_sessions.count()
             
             student_attendance['Total Attendance'] = total_attendance
+            student_attendance['Late Attendance'] = total_late 
             student_attendance['Expected'] = expected_sessions
             student_attendance['Complete'] = total_attendance >= expected_sessions
             student_data.append(student_attendance)
@@ -636,5 +673,6 @@ class AttendanceReportView(View):
         
         with default_storage.open(output_file, 'rb') as f:
             upload_result = cloudinary.uploader.upload(f, resource_type="raw")
-        
+        default_storage.delete(output_file)
         return JsonResponse({"url": upload_result["secure_url"]})
+

@@ -15,6 +15,7 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('change_password/', ChangePasswordView.as_view(), name='change_password'),
     path('info/', UserView.as_view(), name='user_detail'),
+    path('info/<int:user_id>/', UserView.as_view(), name='user_detail_change'),
 
     # Classroom Routes - CRUD và thêm nhiều học viên vào lớp
     path('classroom/', ClassroomView.as_view(), name='classroom_list'),

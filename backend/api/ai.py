@@ -6,6 +6,8 @@ import os
 import requests
 from sklearn.svm import SVC
 from api.models import EmbeddingData
+import mediapipe as mp
+
 
 model_dir = os.path.join(os.path.dirname(__file__), 'ai_model')
 model_path = os.path.join(model_dir, 'face_classifier.pkl')
@@ -58,8 +60,27 @@ def load_model():
 
 session = load_model()
 
+def detect_main_face(image):
+        mp_face_detection = mp.solutions.face_detection
+        face_detector = mp_face_detection.FaceDetection(min_detection_confidence=0.5)
+        image = image.convert("RGB")
+        image_np = np.array(image)
+        results = face_detector.process(image_np)
+        if results.detections:
+            img_w, img_h = image.size
+            best_detection = max(results.detections, key=lambda d: d.score[0])
+            bboxC = best_detection.location_data.relative_bounding_box
+            x, y, w, h = bboxC.xmin, bboxC.ymin, bboxC.width, bboxC.height
+            x1, y1 = int(x * img_w), int(y * img_h)
+            x2, y2 = int((x + w) * img_w), int((y + h) * img_h)
+            face = image.crop((x1, y1, x2, y2))
+            return face 
+        return None
+
+
 # Hàm tiền xử lý ảnh và chuyển đổi thành numpy array
 def preprocess_image(img):
+    img = detect_main_face(img)
     img = img.resize((160, 160))
     img = np.array(img)
     img = ((img.astype(np.float32) / 255.0) - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
@@ -86,11 +107,13 @@ def predict(image):
     predicted_label = face_classifier.classes_[predicted_index] 
     print("Xác suất từng lớp:", probabilities)
     print("Danh sách lớp:", face_classifier.classes_)
-    print(f"Dự đoán: {predicted_label}, Xác suất: {max_prob:.4f}", max_prob >= 0.4)
-    return predicted_label if max_prob >= 0.4 else False
+    print(f"Dự đoán: {predicted_label}, Xác suất: {max_prob:.4f}", max_prob >= 0.35)
+    return predicted_label if max_prob >= 0.35 else False
 
 
 def train(images_path, label):
+    EmbeddingData.objects.filter(label=label).delete()
+
     global face_classifier
     for image_path in images_path:
         image = Image.open(image_path)

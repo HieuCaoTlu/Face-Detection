@@ -102,6 +102,9 @@ class Teacher(CustomUser):
         data['role'] = 'teacher'
         return data
 
+from django.utils import timezone
+import pytz
+
 class Classroom(BaseModel):
     name = models.CharField(max_length=255)
     teacher = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='teachers')
@@ -114,13 +117,22 @@ class Classroom(BaseModel):
 
     def info(self):
         students = self.students.all()
+        
+        if self.start_date:
+            vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+            start_date_local = self.start_date.astimezone(vn_tz)
+            start_date_str = start_date_local.strftime("%d-%m-%Y %H:%M:%S")
+        else:
+            start_date_str = None
+
         return {
             'name': self.name,
             'teacher': self.teacher.name,
-            'start_date': str(self.start_date),
+            'start_date': start_date_str,
             'weeks': self.weeks,
             'id': self.id,
         }
+
 
 class Report(BaseModel):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='reports')

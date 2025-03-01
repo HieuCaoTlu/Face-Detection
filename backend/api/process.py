@@ -33,6 +33,7 @@ def make_user(input_file, output_file, role="student"):
     df['Giới tính'] = df['Giới tính'].replace({'Nam': 'M', 'Nữ': 'F'}).fillna('O')
     df['Ngày sinh'] = pd.to_datetime(df['Ngày sinh'], errors='coerce', dayfirst=True)
     df['password'] = [generate_password() for _ in range(len(df))]
+    df['username'] = None
     # Tạo từng sinh viên (không dùng bulk_create)
     for _, row in df.iterrows():
         if role == "student":
@@ -40,20 +41,23 @@ def make_user(input_file, output_file, role="student"):
                 continue
             student = Student(
                 name=row['Họ tên'],
-                username=row['username'],
+                username='temp_username',
                 password=make_password(row['password']),  # Mã hóa mật khẩu
                 gender=row['Giới tính'],
                 dob=row['Ngày sinh'],
                 phone_number=row['Số điện thoại']
             )
             student.full_clean()  # Kiểm tra lỗi trước khi lưu
+            student.save()
+            student.username = f"ST{str(student.id).zfill(6)}"
             student.save()  # Lưu từng bản ghi riêng lẻ
+            df.loc[df['Họ tên'] == row['Họ tên'], 'username'] = student.username
         else:
             if Teacher.objects.filter(username=row['username']).exists():
                 continue
             teacher = Teacher(
                 name=row['Họ tên'],
-                username=row['username'],
+                username='temp_username',
                 password=make_password(row['password']),  # Mã hóa mật khẩu
                 gender=row['Giới tính'],
                 dob=row['Ngày sinh'],
@@ -61,6 +65,9 @@ def make_user(input_file, output_file, role="student"):
             )
             teacher.full_clean()  # Kiểm tra lỗi trước khi lưu
             teacher.save()  
+            teacher.username = f"TC{str(teacher.id).zfill(6)}"
+            teacher.save()
+            df.loc[df['Họ tên'] == row['Họ tên'], 'username'] = teacher.username
 
     with default_storage.open(output_file, 'wb') as f:
         df.to_excel(f, index=False)
@@ -69,6 +76,7 @@ def make_user(input_file, output_file, role="student"):
         upload_result = cloudinary.uploader.upload(f, resource_type="raw")
 
     print("File uploaded to:", upload_result["secure_url"])
+    default_storage.delete(output_file)
     return upload_result["secure_url"]
     
 def get_student(file):
@@ -102,4 +110,5 @@ def get_student_excel(classroom_id, output_file):
         upload_result = cloudinary.uploader.upload(f, resource_type="raw")
 
     print("File uploaded to:", upload_result["secure_url"])
+    default_storage.delete(output_file)
     return upload_result["secure_url"]

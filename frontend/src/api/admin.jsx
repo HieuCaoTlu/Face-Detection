@@ -52,3 +52,8 @@ export const makeClassroom = async (name, weeks, start_date, sessions, teacher_i
     const response = await request("POST", "/classroom/", body);
     return response.data.classroom;
 };
+
+export const changeUserInfo = async (user_id, updatedData) => {
+    const response = await request("PUT", `/info/${user_id}/`, updatedData);
+    return response.data.user;
+};
